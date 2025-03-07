@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# UI-testing
+/src/app/test
+
 # next.js
 /.next/
 /out/
