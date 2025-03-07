@@ -22,8 +22,8 @@ The bidding app is a sports auction platform that facilitates the player draftin
 
 1. Clone the repository
 ```bash
-git clone https://github.com/your-username/bidding-app.git
-cd bidding-app
+git clone https://github.com/jibingzeropixels/auction_app_web
+cd auction_web_app
 ```
 
 2. Install dependencies and run
