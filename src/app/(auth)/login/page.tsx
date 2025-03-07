@@ -36,7 +36,6 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // This will be implemented by your backend team
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -51,7 +50,6 @@ export default function LoginPage() {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Store token and user info (your backend team will handle this)
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
