@@ -131,6 +131,12 @@ export default function LoginPage() {
                 Don't have an account? Register
               </Typography>
             </Link>
+
+            <Link href="/forgot-password">
+                <Typography variant="body2" color="primary">
+                     Forgot password?
+                </Typography>
+            </Link>
           </Box>
         </Box>
       </Paper>
