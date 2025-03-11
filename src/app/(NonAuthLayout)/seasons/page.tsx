@@ -16,7 +16,7 @@ export default function SeasonsPage() {
     { id: 6, seasonName: "2026-2027" },
     { id: 7, seasonName: "2025-2026" },
     { id: 8, seasonName: "2026-2027" },
-    { id: 9, seasonName: "2025-2026" },
+    { id: 9, seasonName: "2027-2028" },
   ];
 
   const handleRowClick = (seasonName: any) => {
