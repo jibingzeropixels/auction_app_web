@@ -8,15 +8,15 @@ export default function SeasonsPage() {
   const router = useRouter();
 
   const rows = [
-    { id: 1, seasonName: "IPL 2025" },
-    { id: 2, seasonName: "T20 World Cup" },
-    { id: 3, seasonName: "IPL 2025" },
-    { id: 4, seasonName: "T20 World Cup" },
-    { id: 5, seasonName: "IPL 2025" },
-    { id: 6, seasonName: "T20 World Cup" },
-    { id: 7, seasonName: "IPL 2025" },
-    { id: 8, seasonName: "T20 World Cup" },
-    { id: 9, seasonName: "IPL 2025" },
+    { id: 1, seasonName: "2025-2026" },
+    { id: 2, seasonName: "2026-2027" },
+    { id: 3, seasonName: "2025-2026" },
+    { id: 4, seasonName: "2026-2027" },
+    { id: 5, seasonName: "2025-2026" },
+    { id: 6, seasonName: "2026-2027" },
+    { id: 7, seasonName: "2025-2026" },
+    { id: 8, seasonName: "2026-2027" },
+    { id: 9, seasonName: "2025-2026" },
   ];
 
   const handleRowClick = (seasonName: any) => {
