@@ -2,32 +2,83 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { Button, Box } from "@mui/material";
+
+const rows = [
+  { id: 1, name: "2025-2026", startDate: "2025-06-01", endDate: "2026-05-31" },
+  { id: 2, name: "2026-2027", startDate: "2026-06-01", endDate: "2027-05-31" },
+];
 
 export default function SeasonsPage() {
   const router = useRouter();
 
-  const rows = [
-    { id: 1, seasonName: "2025-2026" },
-    { id: 2, seasonName: "2026-2027" },
-    { id: 3, seasonName: "2025-2026" },
-    { id: 4, seasonName: "2026-2027" },
-    { id: 5, seasonName: "2025-2026" },
-    { id: 6, seasonName: "2026-2027" },
-    { id: 7, seasonName: "2025-2026" },
-    { id: 8, seasonName: "2026-2027" },
-    { id: 9, seasonName: "2027-2028" },
-  ];
-
-  const handleRowClick = (seasonName: any) => {
-    router.push(`/seasons/${encodeURIComponent(seasonName)}`);
+  const handleRowClick = (seasonId: number) => {
+    router.push(`/seasons/${seasonId}`);
   };
 
+  const handleEdit = (seasonId: number) => {
+    router.push(`/seasons/add?edit=${seasonId.toString()}`);
+  };
+
+  const handleDelete = (seasonId: number) => {
+    if (window.confirm("Are you sure you want to delete this season?")) {
+      console.log(`Deleting season ${seasonId}`);
+    }
+  };
+
+  const columns: GridColDef[] = [
+    { field: "name", headerName: "Season Name", width: 200 },
+    { field: "startDate", headerName: "Start Date", width: 150 },
+    { field: "endDate", headerName: "End Date", width: 150 },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 200,
+      renderCell: (params) => (
+        <Box>
+          <Button
+            onClick={(event) => {
+              event.stopPropagation(); // ✅ Prevents row click
+              handleEdit(params.row.id);
+            }}
+            color="primary"
+          >
+            Edit
+          </Button>
+          <Button
+            onClick={(event) => {
+              event.stopPropagation(); // ✅ Prevents row click
+              handleDelete(params.row.id);
+            }}
+            color="error"
+          >
+            Delete
+          </Button>
+        </Box>
+      ),
+    },
+  ];
+
   return (
-    <DataGrid
-      rows={rows}
-      columns={[{ field: "seasonName", headerName: "Season Name", width: 250 }]}
-      onRowClick={(params) => handleRowClick(params.row.seasonName)}
-    />
+    <Box sx={{ width: "100%" }}>
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => router.push("/seasons/add")}
+        >
+          Add Season
+        </Button>
+      </Box>
+
+      <Box sx={{ height: 400 }}>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          onRowClick={(params) => handleRowClick(params.row.id)} // ✅ Fixed here
+        />
+      </Box>
+    </Box>
   );
 }
