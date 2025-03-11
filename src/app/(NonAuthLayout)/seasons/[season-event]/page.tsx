@@ -9,8 +9,8 @@ export default function EventsPage() {
   const router = useRouter();
 
   const rows = [
-    { id: 1, name: "Auction Day 1", seasonId: 1 },
-    { id: 2, name: "Auction Day 2", seasonId: 1 },
+    { id: 1, name: "Mens Cricket", seasonId: 1 },
+    { id: 2, name: "Womens Cricket", seasonId: 1 },
   ];
 
   const handleRowClick = (id: any) => {
@@ -21,7 +21,7 @@ export default function EventsPage() {
     <DataGrid
       rows={rows}
       columns={[{ field: "name", headerName: "Event Name", width: 250 }]}
-      onRowClick={(params) => handleRowClick(params.row.id)}
+      onRowClick={(params) => handleRowClick(params.row.name)}
     />
   );
 }

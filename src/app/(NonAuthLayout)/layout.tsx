@@ -12,6 +12,8 @@ import {
   Toolbar,
   Button,
   Typography,
+  Breadcrumbs,
+  Link,
 } from "@mui/material";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -26,10 +28,16 @@ export default function NonAuthLayout({
   const pathname = usePathname();
 
   const pathParts = pathname.split("/");
-  const seasonId = pathParts[3] || null;
-  const eventId = pathParts[4] || null;
+  const seasonId = pathParts[2] ? decodeURIComponent(pathParts[2]) : null;
+  const eventId = pathParts[3] ? decodeURIComponent(pathParts[3]) : null;
 
-  const isActive = (match: string) => pathname.includes(match);
+  const isActive = (path: string) => {
+    if (pathname === path) return true;
+    if (path === "/seasons" && pathname.startsWith("/seasons")) return true;
+    if (seasonId && path === `/seasons/${seasonId}`) return true;
+    if (eventId && path === `/seasons/${seasonId}/${eventId}`) return true;
+    return false;
+  };
 
   const handleNavigate = (path: string) => {
     router.push(path);
@@ -64,18 +72,26 @@ export default function NonAuthLayout({
           {seasonId && (
             <ListItemButton
               selected={isActive(`/seasons/${seasonId}`)}
-              onClick={() => handleNavigate(`/seasons/${seasonId}`)}
+              onClick={() =>
+                handleNavigate(`/seasons/${encodeURIComponent(seasonId)}`)
+              }
             >
-              <ListItemText primary="Events" />
+              <ListItemText primary={seasonId} />
             </ListItemButton>
           )}
 
           {seasonId && eventId && (
             <ListItemButton
               selected={isActive(`/seasons/${seasonId}/${eventId}`)}
-              onClick={() => handleNavigate(`/seasons/${seasonId}/${eventId}`)}
+              onClick={() =>
+                handleNavigate(
+                  `/seasons/${encodeURIComponent(
+                    seasonId
+                  )}/${encodeURIComponent(eventId)}`
+                )
+              }
             >
-              <ListItemText primary="Teams" />
+              <ListItemText primary={eventId} />
             </ListItemButton>
           )}
         </List>
@@ -92,7 +108,48 @@ export default function NonAuthLayout({
         </Toolbar>
       </AppBar>
 
-      <Box component="main" sx={{ pt: 8 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, pt: 8, height: "100%" }}>
+        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2, mt: 2 }}>
+          <Link
+            underline="hover"
+            color="inherit"
+            onClick={() => handleNavigate("/seasons")}
+            sx={{ cursor: "pointer" }}
+          >
+            Seasons
+          </Link>
+
+          {seasonId && (
+            <Link
+              underline="hover"
+              color={eventId ? "inherit" : "text.primary"}
+              onClick={() =>
+                handleNavigate(`/seasons/${encodeURIComponent(seasonId)}`)
+              }
+              sx={{ cursor: "pointer" }}
+            >
+              {seasonId}
+            </Link>
+          )}
+
+          {seasonId && eventId && (
+            <Link
+              underline="hover"
+              color="text.primary"
+              onClick={() =>
+                handleNavigate(
+                  `/seasons/${encodeURIComponent(
+                    seasonId
+                  )}/${encodeURIComponent(eventId)}`
+                )
+              }
+              sx={{ cursor: "pointer" }}
+            >
+              {eventId}
+            </Link>
+          )}
+        </Breadcrumbs>
+
         {children}
       </Box>
     </Box>
