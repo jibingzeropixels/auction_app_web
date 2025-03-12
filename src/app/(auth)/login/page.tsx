@@ -35,38 +35,91 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    // FOR TESTING ONLY - mock users
     try {
-        //
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+        const mockUsers = {
+        superAdmin: {
+            id: '1',
+            name: 'Admin User',
+            email: formData.email,
+            role: 'superAdmin'
         },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirect based on user role
-      if (data.user.role === 'superAdmin') {
-        router.push('/dashboard/seasons');
-      } else if (data.user.role === 'eventAdmin') {
-        router.push(`/dashboard/seasons/${data.user.seasonId}/events`);
-      } else {
-        router.push(`/dashboard/events/${data.user.eventId}`);
-      }
-    } catch (error: any) {
-      setError(error.message || 'Login failed');
-    } finally {
-      setLoading(false);
+        eventAdmin: {
+            id: '2',
+            name: 'Event Manager',
+            email: formData.email,
+            role: 'eventAdmin',
+            seasonId: '1'
+        },
+        teamRep: {
+            id: '3',
+            name: 'Team Manager',
+            email: formData.email,
+            role: 'teamRepresentative',
+            seasonId: '1',
+            eventId: '101'
+        }
+        };
+    
+        // Choose which mock user to login as based on email
+        let userData;
+        if (formData.email.includes('admin')) {
+        userData = mockUsers.superAdmin;
+        } else if (formData.email.includes('event')) {
+        userData = mockUsers.eventAdmin;
+        } else if (formData.email.includes('team')) {
+        userData = mockUsers.teamRep;
+        } else {
+        // Default to superAdmin
+        userData = mockUsers.superAdmin;
+        }
+    
+        // Store auth data
+        localStorage.setItem('token', 'mock-token');
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // Redirect to dashboard
+        router.push('/dashboard');
+    
+    } catch (error) {
+        // Error handling...
     }
+
+
+    // for actual api call
+
+    // try {
+    //     //backend
+    //   const response = await fetch('/api/auth/login', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json'
+    //     },
+    //     body: JSON.stringify(formData)
+    //   });
+
+    //   const data = await response.json();
+
+    //   if (!response.ok) {
+    //     throw new Error(data.message || 'Login failed');
+    //   }
+
+    //   localStorage.setItem('token', data.token);
+    //   localStorage.setItem('user', JSON.stringify(data.user));
+
+    //   // Redirect based on user role
+    //   if (data.user.role === 'superAdmin') {
+    //     router.push('/dashboard/seasons');
+    //   } else if (data.user.role === 'eventAdmin') {
+    //     router.push(`/dashboard/seasons/${data.user.seasonId}/events`);
+    //   } else {
+    //     router.push(`/dashboard/events/${data.user.eventId}`);
+    //   }
+    // } catch (error: any) {
+    //   setError(error.message || 'Login failed');
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   return (
