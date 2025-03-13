@@ -1,3 +1,4 @@
+// src/app/dashboard/seasons/page.tsx
 "use client";
 
 import React from "react";
@@ -14,11 +15,11 @@ export default function SeasonsPage() {
   const router = useRouter();
 
   const handleRowClick = (seasonId: number) => {
-    router.push(`/seasons/${seasonId}`);
+    router.push(`/dashboard/seasons/${seasonId}`);
   };
 
   const handleEdit = (seasonId: number) => {
-    router.push(`/seasons/add?edit=${seasonId.toString()}`);
+    router.push(`/dashboard/seasons/add?edit=${seasonId.toString()}`);
   };
 
   const handleDelete = (seasonId: number) => {
@@ -66,7 +67,7 @@ export default function SeasonsPage() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => router.push("/seasons/add")}
+          onClick={() => router.push("/dashboard/seasons/add")}
         >
           Add Season
         </Button>

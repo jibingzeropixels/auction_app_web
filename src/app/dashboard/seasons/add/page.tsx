@@ -1,3 +1,4 @@
+// src/app/dashboard/seasons/add/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -35,7 +36,7 @@ export default function AddSeasonPage() {
     } else {
       console.log("Adding new season:", seasonData);
     }
-    router.push("/seasons");
+    router.push("/dashboard/seasons");
   };
 
   return (
@@ -93,7 +94,7 @@ export default function AddSeasonPage() {
         >
           {editId ? "Update" : "Add"} Season
         </Button>
-        <Button variant="outlined" onClick={() => router.push("/seasons")}>
+        <Button variant="outlined" onClick={() => router.push("/dashboard/seasons")}>
           Cancel
         </Button>
       </form>

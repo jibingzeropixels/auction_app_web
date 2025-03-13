@@ -1,3 +1,4 @@
+// src/app/dashboard/seasons/[season-event]/page.tsx
 "use client";
 
 import React from "react";
@@ -14,7 +15,7 @@ export default function EventsPage() {
   ];
 
   const handleRowClick = (id: any) => {
-    router.push(`/seasons/${seasonId}/${id}`);
+    router.push(`/dashboard/seasons/${seasonId}/${id}`);
   };
 
   return (

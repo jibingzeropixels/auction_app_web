@@ -1,3 +1,4 @@
+// src/app/dashboard/seasons/[event-name]/page.tsx
 "use client";
 
 import React from "react";
