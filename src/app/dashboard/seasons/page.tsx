@@ -1,10 +1,17 @@
-// src/app/dashboard/seasons/page.tsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Button, Box } from "@mui/material";
+import {
+  Button,
+  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from "@mui/material";
 
 const rows = [
   { id: 1, name: "2025-2026", startDate: "2025-06-01", endDate: "2026-05-31" },
@@ -13,6 +20,8 @@ const rows = [
 
 export default function SeasonsPage() {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
 
   const handleRowClick = (seasonId: number) => {
     router.push(`/dashboard/seasons/${seasonId}`);
@@ -22,10 +31,20 @@ export default function SeasonsPage() {
     router.push(`/dashboard/seasons/add?edit=${seasonId.toString()}`);
   };
 
-  const handleDelete = (seasonId: number) => {
-    if (window.confirm("Are you sure you want to delete this season?")) {
-      console.log(`Deleting season ${seasonId}`);
+  const handleDelete = () => {
+    if (selectedSeason !== null) {
+      console.log(`Deleting season ${selectedSeason}`);
+      setOpen(false);
     }
+  };
+
+  const handleOpenDialog = (seasonId: number) => {
+    setSelectedSeason(seasonId);
+    setOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpen(false);
   };
 
   const columns: GridColDef[] = [
@@ -40,7 +59,7 @@ export default function SeasonsPage() {
         <Box>
           <Button
             onClick={(event) => {
-              event.stopPropagation(); // ✅ Prevents row click
+              event.stopPropagation();
               handleEdit(params.row.id);
             }}
             color="primary"
@@ -49,8 +68,8 @@ export default function SeasonsPage() {
           </Button>
           <Button
             onClick={(event) => {
-              event.stopPropagation(); // ✅ Prevents row click
-              handleDelete(params.row.id);
+              event.stopPropagation();
+              handleOpenDialog(params.row.id);
             }}
             color="error"
           >
@@ -77,9 +96,27 @@ export default function SeasonsPage() {
         <DataGrid
           rows={rows}
           columns={columns}
-          onRowClick={(params) => handleRowClick(params.row.id)} // ✅ Fixed here
+          onRowClick={(params) => handleRowClick(params.row.id)}
         />
       </Box>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={open} onClose={handleCloseDialog}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this season?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDelete} color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
