@@ -267,7 +267,6 @@ export default function PlayersPage() {
         }}
       />
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
