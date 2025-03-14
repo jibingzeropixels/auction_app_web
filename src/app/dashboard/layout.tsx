@@ -27,6 +27,7 @@ import EventIcon from '@mui/icons-material/Event';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 
 const drawerWidth = 240;
 
@@ -37,6 +38,7 @@ const navigationItems = {
     { name: 'Seasons', icon: <CalendarViewMonthIcon />, path: '/dashboard/seasons' },
     { name: 'Events', icon: <EventIcon />, path: '/dashboard/events' },
     { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
+    { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
   ],
   eventAdmin: [
     { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
