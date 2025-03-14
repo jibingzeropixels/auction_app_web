@@ -1,31 +1,63 @@
-// src/app/dashboard/seasons/page.tsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Button, Box } from "@mui/material";
+import {
+  Button,
+  Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  IconButton,
+  TextField,
+  InputAdornment,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import SearchIcon from "@mui/icons-material/Search";
 
-const rows = [
+const initialRows = [
   { id: 1, name: "2025-2026", startDate: "2025-06-01", endDate: "2026-05-31" },
   { id: 2, name: "2026-2027", startDate: "2026-06-01", endDate: "2027-05-31" },
 ];
 
 export default function SeasonsPage() {
   const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredRows, setFilteredRows] = useState(initialRows);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [selectedSeason, setSelectedSeason] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
-  const handleRowClick = (seasonId: number) => {
-    router.push(`/dashboard/seasons/${seasonId}`);
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.toLowerCase();
+    setSearchTerm(value);
+    setFilteredRows(
+      initialRows.filter((row) => row.name.toLowerCase().includes(value))
+    );
   };
 
   const handleEdit = (seasonId: number) => {
-    router.push(`/dashboard/seasons/add?edit=${seasonId.toString()}`);
+    router.push(`/dashboard/seasons/add?edit=${seasonId}`);
   };
 
-  const handleDelete = (seasonId: number) => {
-    if (window.confirm("Are you sure you want to delete this season?")) {
-      console.log(`Deleting season ${seasonId}`);
+  const handleDeleteClick = (season: { id: number; name: string }) => {
+    setSelectedSeason(season);
+    setOpenDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedSeason) {
+      console.log(`Deleting season ${selectedSeason.id}`);
+      // TODO: Add actual delete logic here
     }
+    setOpenDeleteDialog(false);
+    setSelectedSeason(null);
   };
 
   const columns: GridColDef[] = [
@@ -35,35 +67,53 @@ export default function SeasonsPage() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 200,
+      width: 100,
       renderCell: (params) => (
         <Box>
-          <Button
+          <IconButton
             onClick={(event) => {
-              event.stopPropagation(); // ✅ Prevents row click
+              event.stopPropagation();
               handleEdit(params.row.id);
             }}
             color="primary"
           >
-            Edit
-          </Button>
-          <Button
+            <EditIcon />
+          </IconButton>
+          <IconButton
             onClick={(event) => {
-              event.stopPropagation(); // ✅ Prevents row click
-              handleDelete(params.row.id);
+              event.stopPropagation();
+              handleDeleteClick(params.row);
             }}
             color="error"
           >
-            Delete
-          </Button>
+            <DeleteIcon />
+          </IconButton>
         </Box>
       ),
     },
   ];
 
   return (
-    <Box sx={{ width: "100%" }}>
-      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+    <Box sx={{ width: "100%", p: 2 }}>
+      {/* Search & Add Button */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+        <TextField
+          variant="outlined"
+          placeholder="Search seasons..."
+          size="small"
+          value={searchTerm}
+          onChange={handleSearch}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+
         <Button
           variant="contained"
           color="primary"
@@ -73,13 +123,43 @@ export default function SeasonsPage() {
         </Button>
       </Box>
 
-      <Box sx={{ height: 400 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          onRowClick={(params) => handleRowClick(params.row.id)} // ✅ Fixed here
-        />
-      </Box>
+      {/* Data Grid with White Background */}
+
+      <DataGrid
+        rows={filteredRows}
+        columns={columns}
+        sx={{
+          bgcolor: "white", // ✅ Only Data Grid background is white
+          "& .MuiDataGrid-cell": { bgcolor: "white" },
+          "& .MuiDataGrid-columnHeaders": {
+            bgcolor: "white",
+            fontWeight: "bold",
+          },
+          "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+        }}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the season{" "}
+            <strong>{selectedSeason?.name}</strong>?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={confirmDelete} color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
