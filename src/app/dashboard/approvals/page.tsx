@@ -252,7 +252,7 @@ export default function ApprovalsPage() {
                         <Tooltip title="Approve">
                             <IconButton 
                             aria-label="Approve request"
-                            onClick={() => handleApprove(rep.id, 'eventAdmin')}
+                            onClick={() => handleApprove(rep.id, 'teamRep')}
                             sx={{ 
                                 color: 'text.secondary',
                                 '&:hover': { color: 'success.main' } 
@@ -264,7 +264,7 @@ export default function ApprovalsPage() {
                         <Tooltip title="Reject">
                             <IconButton 
                             aria-label="Reject request"
-                            onClick={() => handleReject(rep.id, 'eventAdmin')}
+                            onClick={() => handleReject(rep.id, 'teamRep')}
                             sx={{ 
                                 color: 'text.secondary',
                                 '&:hover': { color: 'error.main' } 
