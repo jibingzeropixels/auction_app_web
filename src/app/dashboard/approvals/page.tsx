@@ -17,6 +17,8 @@ import {
   TableHead,
   TableRow,
   Button,
+  Tooltip,
+  IconButton,
   Chip,
   Alert
 } from '@mui/material';
@@ -179,22 +181,31 @@ export default function ApprovalsPage() {
                         <Chip label={admin.status} color="warning" size="small" />
                       </TableCell>
                       <TableCell align="right">
-                        <Button 
-                          startIcon={<CheckIcon />} 
-                          color="primary" 
-                          onClick={() => handleApprove(admin.id, 'eventAdmin')}
-                          sx={{ mr: 1 }}
-                        >
-                          Approve
-                        </Button>
-                        <Button 
-                          startIcon={<CloseIcon />} 
-                          color="error" 
-                          onClick={() => handleReject(admin.id, 'eventAdmin')}
-                        >
-                          Reject
-                        </Button>
-                      </TableCell>
+                        <Tooltip title="Approve">
+                            <IconButton 
+                            aria-label="Approve request"
+                            onClick={() => handleApprove(admin.id, 'eventAdmin')}
+                            sx={{ 
+                                color: 'text.secondary',
+                                '&:hover': { color: 'success.main' } 
+                            }}
+                            >
+                            <CheckIcon />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Reject">
+                            <IconButton 
+                            aria-label="Reject request"
+                            onClick={() => handleReject(admin.id, 'eventAdmin')}
+                            sx={{ 
+                                color: 'text.secondary',
+                                '&:hover': { color: 'error.main' } 
+                            }}
+                            >
+                            <CloseIcon />
+                            </IconButton>
+                        </Tooltip>
+                        </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -238,22 +249,31 @@ export default function ApprovalsPage() {
                         <Chip label={rep.status} color="warning" size="small" />
                       </TableCell>
                       <TableCell align="right">
-                        <Button 
-                          startIcon={<CheckIcon />} 
-                          color="primary" 
-                          onClick={() => handleApprove(rep.id, 'teamRep')}
-                          sx={{ mr: 1 }}
-                        >
-                          Approve
-                        </Button>
-                        <Button 
-                          startIcon={<CloseIcon />} 
-                          color="error" 
-                          onClick={() => handleReject(rep.id, 'teamRep')}
-                        >
-                          Reject
-                        </Button>
-                      </TableCell>
+                        <Tooltip title="Approve">
+                            <IconButton 
+                            aria-label="Approve request"
+                            onClick={() => handleApprove(rep.id, 'eventAdmin')}
+                            sx={{ 
+                                color: 'text.secondary',
+                                '&:hover': { color: 'success.main' } 
+                            }}
+                            >
+                            <CheckIcon />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Reject">
+                            <IconButton 
+                            aria-label="Reject request"
+                            onClick={() => handleReject(rep.id, 'eventAdmin')}
+                            sx={{ 
+                                color: 'text.secondary',
+                                '&:hover': { color: 'error.main' } 
+                            }}
+                            >
+                            <CloseIcon />
+                            </IconButton>
+                        </Tooltip>
+                        </TableCell>
                     </TableRow>
                   ))
                 )}
