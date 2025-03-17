@@ -89,7 +89,7 @@ export default function LoginPage() {
     // for actual api call
 
     // try {
-    //     //backend
+    //     // backend
     //   const response = await fetch('/api/auth/login', {
     //     method: 'POST',
     //     headers: {
