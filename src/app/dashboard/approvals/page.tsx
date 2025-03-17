@@ -20,20 +20,25 @@ import {
   Tooltip,
   IconButton,
   Chip,
-  Alert
+  Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 
 // Mock data for pending approvals
 const mockEventAdmins = [
-  { id: '1', name: 'Peter Johnson', email: 'peter@example.com', role: 'eventAdmin', seasonId: '1', seasonName: 'Season 2024', status: 'pending', createdAt: '2024-03-10' },
-  { id: '2', name: 'Jibin George', email: 'jibin@example.com', role: 'eventAdmin', seasonId: '2', seasonName: 'Season 2025', status: 'pending', createdAt: '2024-03-11' },
+  { id: '1', name: 'Peter Johnson', email: 'peter@example.com', role: 'eventAdmin', seasonId: '1', seasonName: 'Season 2024', status: 'Pending', createdAt: '2024-03-10' },
+  { id: '2', name: 'Jibin George', email: 'jibin@example.com', role: 'eventAdmin', seasonId: '2', seasonName: 'Season 2025', status: 'Pending', createdAt: '2024-03-11' },
 ];
 
 const mockTeamReps = [
-  { id: '3', name: 'Roshin Rajesh', email: 'roshin@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '101', eventName: 'Tournament A', teamId: '201', teamName: 'Team A', status: 'pending', createdAt: '2024-03-12' },
-  { id: '4', name: 'Ryan Thomas', email: 'ryan@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '102', eventName: 'Tournament B', teamId: '202', teamName: 'Team B', status: 'pending', createdAt: '2024-03-13' },
+  { id: '3', name: 'Roshin Rajesh', email: 'roshin@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '101', eventName: 'Tournament A', teamId: '201', teamName: 'Team A', status: 'Pending', createdAt: '2024-03-12' },
+  { id: '4', name: 'Ryan Thomas', email: 'ryan@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '102', eventName: 'Tournament B', teamId: '202', teamName: 'Team B', status: 'Pending', createdAt: '2024-03-13' },
 ];
 
 interface TabPanelProps {
@@ -69,6 +74,12 @@ export default function ApprovalsPage() {
   const [eventAdmins, setEventAdmins] = useState(mockEventAdmins);
   const [teamReps, setTeamReps] = useState(mockTeamReps);
   const [successMessage, setSuccessMessage] = useState('');
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    id: string,
+    type: 'eventAdmin' | 'teamRep',
+    action: 'approve' | 'reject'
+  } | null>(null);
 
   useEffect(() => {
     if (user && user.role !== 'superAdmin') {
@@ -82,42 +93,45 @@ export default function ApprovalsPage() {
     setTabValue(newValue);
   };
 
-  const handleApprove = (id: string, type: 'eventAdmin' | 'teamRep') => {
-    //api
-    if (type === 'eventAdmin') {
-      setEventAdmins(prevAdmins => 
-        prevAdmins.filter(admin => admin.id !== id)
-      );
-      setSuccessMessage('Event admin approved successfully');
-    } else {
-      setTeamReps(prevReps => 
-        prevReps.filter(rep => rep.id !== id)
-      );
-      setSuccessMessage('Team representative approved successfully');
-    }
-
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
+  const handleActionClick = (id: string, type: 'eventAdmin' | 'teamRep', action: 'approve' | 'reject') => {
+    setPendingAction({ id, type, action });
+    setConfirmDialogOpen(true);
   };
 
-  const handleReject = (id: string, type: 'eventAdmin' | 'teamRep') => {
-    // api call
-    if (type === 'eventAdmin') {
-      setEventAdmins(prevAdmins => 
-        prevAdmins.filter(admin => admin.id !== id)
-      );
-      setSuccessMessage('Event admin rejected');
-    } else {
-      setTeamReps(prevReps => 
-        prevReps.filter(rep => rep.id !== id)
-      );
-      setSuccessMessage('Team representative rejected');
+  const handleConfirmAction = () => {
+    if (!pendingAction) return;
+    
+    const { id, type, action } = pendingAction;
+    //api
+    if (action === 'approve') {
+      if (type === 'eventAdmin') {
+        setEventAdmins(prevAdmins => prevAdmins.filter(admin => admin.id !== id));
+        setSuccessMessage('Event admin approved successfully');
+      } else {
+        setTeamReps(prevReps => prevReps.filter(rep => rep.id !== id));
+        setSuccessMessage('Team representative approved successfully');
+      }
+    } else {  //api
+      if (type === 'eventAdmin') {
+        setEventAdmins(prevAdmins => prevAdmins.filter(admin => admin.id !== id));
+        setSuccessMessage('Event admin rejected');
+      } else {
+        setTeamReps(prevReps => prevReps.filter(rep => rep.id !== id));
+        setSuccessMessage('Team representative rejected');
+      }
     }
 
     setTimeout(() => {
       setSuccessMessage('');
     }, 3000);
+
+    setConfirmDialogOpen(false);
+    setPendingAction(null);
+  };
+
+  const handleCancelAction = () => {
+    setConfirmDialogOpen(false);
+    setPendingAction(null);
   };
 
   if (user?.role !== 'superAdmin') {
@@ -182,30 +196,30 @@ export default function ApprovalsPage() {
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip title="Approve">
-                            <IconButton 
+                          <IconButton 
                             aria-label="Approve request"
-                            onClick={() => handleApprove(admin.id, 'eventAdmin')}
+                            onClick={() => handleActionClick(admin.id, 'eventAdmin', 'approve')}
                             sx={{ 
-                                color: 'text.secondary',
-                                '&:hover': { color: 'success.main' } 
+                              color: 'text.secondary',
+                              '&:hover': { color: 'success.main' } 
                             }}
-                            >
+                          >
                             <CheckIcon />
-                            </IconButton>
+                          </IconButton>
                         </Tooltip>
                         <Tooltip title="Reject">
-                            <IconButton 
+                          <IconButton 
                             aria-label="Reject request"
-                            onClick={() => handleReject(admin.id, 'eventAdmin')}
+                            onClick={() => handleActionClick(admin.id, 'eventAdmin', 'reject')}
                             sx={{ 
-                                color: 'text.secondary',
-                                '&:hover': { color: 'error.main' } 
+                              color: 'text.secondary',
+                              '&:hover': { color: 'error.main' } 
                             }}
-                            >
+                          >
                             <CloseIcon />
-                            </IconButton>
+                          </IconButton>
                         </Tooltip>
-                        </TableCell>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -250,30 +264,30 @@ export default function ApprovalsPage() {
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip title="Approve">
-                            <IconButton 
+                          <IconButton 
                             aria-label="Approve request"
-                            onClick={() => handleApprove(rep.id, 'teamRep')}
+                            onClick={() => handleActionClick(rep.id, 'teamRep', 'approve')}
                             sx={{ 
-                                color: 'text.secondary',
-                                '&:hover': { color: 'success.main' } 
+                              color: 'text.secondary',
+                              '&:hover': { color: 'success.main' } 
                             }}
-                            >
+                          >
                             <CheckIcon />
-                            </IconButton>
+                          </IconButton>
                         </Tooltip>
                         <Tooltip title="Reject">
-                            <IconButton 
+                          <IconButton 
                             aria-label="Reject request"
-                            onClick={() => handleReject(rep.id, 'teamRep')}
+                            onClick={() => handleActionClick(rep.id, 'teamRep', 'reject')}
                             sx={{ 
-                                color: 'text.secondary',
-                                '&:hover': { color: 'error.main' } 
+                              color: 'text.secondary',
+                              '&:hover': { color: 'error.main' } 
                             }}
-                            >
+                          >
                             <CloseIcon />
-                            </IconButton>
+                          </IconButton>
                         </Tooltip>
-                        </TableCell>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -282,6 +296,35 @@ export default function ApprovalsPage() {
           </TableContainer>
         </TabPanel>
       </Paper>
+
+      {/* Confirmation dialog box */}
+      <Dialog
+        open={confirmDialogOpen}
+        onClose={handleCancelAction}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {pendingAction?.action === 'approve' ? "Confirm Approval" : "Confirm Rejection"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            {pendingAction?.action === 'approve' 
+              ? "Are you sure you want to approve this request? This will grant access to the user."
+              : "Are you sure you want to reject this request? This action cannot be undone."}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelAction}>Cancel</Button>
+          <Button 
+            onClick={handleConfirmAction} 
+            color={pendingAction?.action === 'approve' ? "primary" : "error"} 
+            autoFocus
+          >
+            {pendingAction?.action === 'approve' ? "Approve" : "Reject"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
