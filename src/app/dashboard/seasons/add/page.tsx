@@ -1,103 +1,262 @@
-// src/app/dashboard/seasons/add/page.tsx
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { TextField, Button, Box } from "@mui/material";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Container,
+  Paper,
+  Breadcrumbs,
+  Link,
+  Alert,
+  Stack
+} from '@mui/material';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+
+interface FormData {
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+}
 
 export default function AddSeasonPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const editId = searchParams.get("edit");
-
-  const [seasonData, setSeasonData] = useState({
-    name: "",
-    description: "",
-    startDate: "",
-    endDate: "",
+  const { user } = useAuth();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [success, setSuccess] = useState<string>('');
+  const [error, setError] = useState<string>('');
+  
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    description: '',
+    startDate: '',
+    endDate: ''
   });
+  
+  const [descriptionLength, setDescriptionLength] = useState<number>(0);
+  const MAX_DESCRIPTION_LENGTH = 500;
 
-  useEffect(() => {
-    if (editId) {
-      // Fetch season details from API (mocked here)
-      setSeasonData({
-        name: "2025-2026",
-        description: "Upcoming Season",
-        startDate: "2025-06-01",
-        endDate: "2026-05-31",
-      });
+  // Check if super admin
+  if (user?.role !== 'superAdmin') {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h6">
+          You don't have permission to access this page.
+        </Typography>
+        <Button 
+          variant="contained" 
+          onClick={() => router.push('/dashboard')}
+          sx={{ mt: 2 }}
+        >
+          Return to Dashboard
+        </Button>
+      </Box>
+    );
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'description') {
+      setDescriptionLength(value.length);
     }
-  }, [editId]);
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = (): boolean => {
+    if (!formData.name.trim()) {
+      setError('Season name is required');
+      return false;
+    }
+    
+    if (!formData.startDate) {
+      setError('Start date is required');
+      return false;
+    }
+    
+    if (!formData.endDate) {
+      setError('End date is required');
+      return false;
+    }
+    
+    if (new Date(formData.startDate) > new Date(formData.endDate)) {
+      setError('End date must be after start date');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (editId) {
-      console.log("Updating season:", seasonData);
-    } else {
-      console.log("Adding new season:", seasonData);
+    setError('');
+    setSuccess('');
+    
+    if (!validateForm()) {
+      return;
     }
-    router.push("/dashboard/seasons");
+    
+    setLoading(true);
+    
+    try {
+      // api call here
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSuccess('Season created successfully');
+      
+      setFormData({
+        name: '',
+        description: '',
+        startDate: '',
+        endDate: ''
+      });
+      
+      setTimeout(() => {
+        router.push('/dashboard/seasons');
+      }, 2000);
+    } catch (err: unknown) {
+      setError('Failed to create season. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleCancel = () => {
+    router.push('/dashboard/seasons');
+  };
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+    e.preventDefault();
+    router.push(path);
   };
 
   return (
-    <Box sx={{ maxWidth: 400 }}>
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Season Name"
-          fullWidth
-          required
-          value={seasonData.name}
-          onChange={(e) =>
-            setSeasonData({ ...seasonData, name: e.target.value })
-          }
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          label="Description"
-          fullWidth
-          multiline
-          value={seasonData.description}
-          onChange={(e) =>
-            setSeasonData({ ...seasonData, description: e.target.value })
-          }
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          label="Start Date"
-          type="date"
-          fullWidth
-          required
-          slotProps={{ inputLabel: { shrink: true } }}
-          value={seasonData.startDate}
-          onChange={(e) =>
-            setSeasonData({ ...seasonData, startDate: e.target.value })
-          }
-          sx={{ mb: 2 }}
-        />
-        <TextField
-          label="End Date"
-          type="date"
-          fullWidth
-          required
-          slotProps={{ inputLabel: { shrink: true } }}
-          value={seasonData.endDate}
-          onChange={(e) =>
-            setSeasonData({ ...seasonData, endDate: e.target.value })
-          }
-          sx={{ mb: 2 }}
-        />
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          sx={{ mr: 2 }}
+    <Container maxWidth="sm">
+      <Box sx={{ mb: 4 }}>
+        <Breadcrumbs 
+          separator={<NavigateNextIcon fontSize="small" />}
+          aria-label="breadcrumb"
         >
-          {editId ? "Update" : "Add"} Season
-        </Button>
-        <Button variant="outlined" onClick={() => router.push("/dashboard/seasons")}>
-          Cancel
-        </Button>
-      </form>
-    </Box>
+          <Link 
+            color="inherit" 
+            href="/dashboard"
+            onClick={(e) => handleLinkClick(e, '/dashboard')}
+          >
+            Dashboard
+          </Link>
+          <Link
+            color="inherit"
+            href="/dashboard/seasons"
+            onClick={(e) => handleLinkClick(e, '/dashboard/seasons')}
+          >
+            Seasons
+          </Link>
+          <Typography color="text.primary">Add Season</Typography>
+        </Breadcrumbs>
+      </Box>
+      
+      <Paper elevation={3} sx={{ p: 3 }}>
+        <Typography variant="h5" component="h1" gutterBottom>
+          Add New Season
+        </Typography>
+        
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            {success}
+          </Alert>
+        )}
+        
+        <Box component="form" onSubmit={handleSubmit}>
+          <Stack spacing={3}>
+            <TextField
+              required
+              fullWidth
+              id="name"
+              name="name"
+              label="Season Name"
+              value={formData.name}
+              onChange={handleChange}
+              error={error.includes('name')}
+              helperText={error.includes('name') ? 'Season name is required' : ''}
+            />
+            
+            <TextField
+              fullWidth
+              id="description"
+              name="description"
+              label="Description"
+              multiline
+              rows={4}
+              value={formData.description}
+              onChange={handleChange}
+              inputProps={{ maxLength: MAX_DESCRIPTION_LENGTH }}
+              helperText={`${descriptionLength}/${MAX_DESCRIPTION_LENGTH}`}
+            />
+            
+            <TextField
+              required
+              fullWidth
+              id="startDate"
+              name="startDate"
+              label="Start Date"
+              type="date"
+              value={formData.startDate}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              error={error.includes('start date')}
+              helperText={error.includes('start date') ? 'Start date is required' : ''}
+            />
+            
+            <TextField
+              required
+              fullWidth
+              id="endDate"
+              name="endDate"
+              label="End Date"
+              type="date"
+              value={formData.endDate}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              error={error.includes('end date')}
+              helperText={error.includes('end date') ? 'End date is required' : ''}
+            />
+            
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={handleCancel}
+                sx={{ minWidth: '100px' }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={loading}
+                sx={{ minWidth: '100px' }}
+              >
+                {loading ? 'Creating...' : 'Add Season'}
+              </Button>
+            </Box>
+          </Stack>
+        </Box>
+      </Paper>
+    </Container>
   );
 }
