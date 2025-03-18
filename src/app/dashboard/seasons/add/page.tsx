@@ -146,13 +146,6 @@ export default function AddSeasonPage() {
           separator={<NavigateNextIcon fontSize="small" />}
           aria-label="breadcrumb"
         >
-          <Link 
-            color="inherit" 
-            href="/dashboard"
-            onClick={(e) => handleLinkClick(e, '/dashboard')}
-          >
-            Dashboard
-          </Link>
           <Link
             color="inherit"
             href="/dashboard/seasons"
