@@ -1,8 +1,7 @@
-// src/app/dashboard/layout.tsx
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import {
   AppBar,
@@ -19,28 +18,35 @@ import {
   IconButton,
   Avatar,
   Menu,
-  MenuItem
-} from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
-import EventIcon from '@mui/icons-material/Event';
-import GroupsIcon from '@mui/icons-material/Groups';
-import PersonIcon from '@mui/icons-material/Person';
-import LogoutIcon from '@mui/icons-material/Logout';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
-
+  MenuItem,
+} from "@mui/material";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import CalendarViewMonthIcon from "@mui/icons-material/CalendarViewMonth";
+import EventIcon from "@mui/icons-material/Event";
+import GroupsIcon from "@mui/icons-material/Groups";
+import PersonIcon from "@mui/icons-material/Person";
+import LogoutIcon from "@mui/icons-material/Logout";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 
 const drawerWidth = 240;
 
 // Define navigation items by role
 const navigationItems = {
   superAdmin: [
-    { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { name: 'Seasons', icon: <CalendarViewMonthIcon />, path: '/dashboard/seasons' },
-    { name: 'Events', icon: <EventIcon />, path: '/dashboard/events' },
-    { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
-    { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
-
+    { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+    {
+      name: "Seasons",
+      icon: <CalendarViewMonthIcon />,
+      path: "/dashboard/seasons",
+    },
+    { name: "Events", icon: <EventIcon />, path: "/dashboard/events" },
+    { name: "Teams", icon: <GroupsIcon />, path: "/dashboard/teams" },
+    { name: "Players", icon: <PersonIcon />, path: "/dashboard/players" },
+    {
+      name: "Approvals",
+      icon: <AssignmentTurnedInIcon />,
+      path: "/dashboard/approvals",
+    },
   ],
   eventAdmin: [
     { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
@@ -57,20 +63,19 @@ const navigationItems = {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname(); // Get the current active path
   const { user, login, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userData, setUserData] = useState(user);
 
   useEffect(() => {
-    // If user is already in context, use it
     if (user) {
       setUserData(user);
       setIsLoading(false);
       return;
     }
 
-    // Otherwise check localStorage
     try {
       const storedUserJSON = localStorage.getItem("user");
       if (!storedUserJSON) {
@@ -79,9 +84,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       }
 
       const storedUser = JSON.parse(storedUserJSON);
-      // Update both local state and auth context
       setUserData(storedUser);
-      login(storedUser); // This ensures the context is updated
+      login(storedUser);
       setIsLoading(false);
     } catch (error) {
       console.error("Error parsing user data", error);
@@ -89,24 +93,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [user, login, router]);
 
-  // Handle menu open
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  // Handle menu close
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
 
-  // Handle logout
   const handleLogout = () => {
     handleMenuClose();
     logout();
     router.push("/login");
   };
 
-  // Show loading state
   if (isLoading || !userData) {
     return (
       <Box
@@ -122,7 +122,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Get navigation items for current user role
   const userRole = userData.role as keyof typeof navigationItems;
   const navItems = navigationItems[userRole] || [];
 
@@ -154,15 +153,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu
               id="menu-appbar"
               anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
+              anchorOrigin={{ vertical: "top", horizontal: "right" }}
               keepMounted
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
             >
@@ -186,14 +179,39 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <Toolbar />
         <Box sx={{ overflow: "auto" }}>
           <List>
-            {navItems.map((item) => (
-              <ListItem key={item.name} disablePadding>
-                <ListItemButton onClick={() => router.push(item.path)}>
-                  <ListItemIcon>{item.icon}</ListItemIcon>
-                  <ListItemText primary={item.name} />
-                </ListItemButton>
-              </ListItem>
-            ))}
+            {navItems.map((item) => {
+              const isSelected = pathname === item.path;
+              return (
+                <ListItem key={item.name} disablePadding>
+                  <ListItemButton
+                    onClick={() => router.push(item.path)}
+                    sx={{
+                      backgroundColor: isSelected
+                        ? "rgba(0, 0, 255, 0.1)"
+                        : "transparent",
+                      borderRadius: "5px",
+                      transition: "background-color 0.3s ease-in-out",
+                      "&:hover": {
+                        backgroundColor: "rgba(0, 0, 255, 0.2)",
+                      },
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{ color: isSelected ? "blue" : "inherit" }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.name}
+                      sx={{
+                        fontWeight: isSelected ? "bold" : "normal",
+                        color: isSelected ? "blue" : "inherit",
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
           </List>
           <Divider />
           <List>
