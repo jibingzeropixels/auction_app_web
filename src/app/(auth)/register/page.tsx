@@ -22,29 +22,44 @@ import {
 
 // types 
 type Season = {
-  _id: string;
-  name: string;
-};
-
-type Event = {
-  _id: string;
-  name: string;
-  seasonId: string;
-};
+    _id: string;
+    name: string;
+  };
+  
+  type Event = {
+    _id: string;
+    name: string;
+    seasonId: string;
+  };
+  
+  type Team = {
+    _id: string;
+    name: string;
+    eventId: string;
+  };
 
 // Mock seasons and events data for now
 const mockSeasons: Season[] = [
-  { _id: '1', name: 'Season 2024' },
-  { _id: '2', name: 'Season 2025' }
-];
+    { _id: '1', name: 'Season 2024' },
+    { _id: '2', name: 'Season 2025' }
+  ];
 
-const mockEvents: Event[] = [
-  { _id: '101', name: 'Tournament A', seasonId: '1' },
-  { _id: '102', name: 'Tournament B', seasonId: '1' },
-  { _id: '103', name: 'Tournament C', seasonId: '2' }
-];
+  const mockEvents: Event[] = [
+    { _id: '101', name: 'Tournament A', seasonId: '1' },
+    { _id: '102', name: 'Tournament B', seasonId: '1' },
+    { _id: '103', name: 'Tournament C', seasonId: '2' }
+  ];
+  
+  // Some mockteams
+  const mockTeams = [
+    { _id: '201', name: 'Team A', eventId: '101' },
+    { _id: '202', name: 'Team B', eventId: '101' },
+    { _id: '203', name: 'Team C', eventId: '102' },
+    { _id: '204', name: 'Team D', eventId: '102' },
+    { _id: '205', name: 'Team E', eventId: '103' },
+  ];
 
-// Define FormData type
+// define FormData
 interface FormData {
   name: string;
   email: string;
@@ -53,6 +68,7 @@ interface FormData {
   role: 'teamRepresentative' | 'eventAdmin';
   seasonId: string;
   eventId: string;
+  teamId: string;
 }
 
 export default function RegisterPage() {
@@ -64,17 +80,20 @@ export default function RegisterPage() {
     confirmPassword: '',
     role: 'teamRepresentative',
     seasonId: '',
-    eventId: ''
+    eventId: '',
+    teamId: ''
   });
+  
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   // Load seasons from api call
   useEffect(() => {
-    // using mockseasons now, replace later
+    // replace with api call 
     setSeasons(mockSeasons);
   }, []);
 
@@ -82,6 +101,7 @@ export default function RegisterPage() {
   useEffect(() => {
     if (!formData.seasonId) {
       setEvents([]);
+      setFormData(prev => ({ ...prev, eventId: '', teamId: '' }));
       return;
     }
 
@@ -91,11 +111,27 @@ export default function RegisterPage() {
     );
     setEvents(filteredEvents);
 
-    // Clear eventId if it's not in the new list of events
     if (formData.eventId && !filteredEvents.some(e => e._id === formData.eventId)) {
-      setFormData(prev => ({ ...prev, eventId: '' }));
+      setFormData(prev => ({ ...prev, eventId: '', teamId: '' }));
     }
-  }, [formData.seasonId, formData.eventId]);
+  }, [formData.seasonId]);
+
+  useEffect(() => {
+    if (!formData.eventId) {
+      setTeams([]);
+      setFormData(prev => ({ ...prev, teamId: '' }));
+      return;
+    }
+
+    const filteredTeams = mockTeams.filter(
+      team => team.eventId === formData.eventId
+    );
+    setTeams(filteredTeams);
+
+    if (formData.teamId && !filteredTeams.some(t => t._id === formData.teamId)) {
+      setFormData(prev => ({ ...prev, teamId: '' }));
+    }
+  }, [formData.eventId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
     const { name, value } = e.target;
@@ -143,8 +179,18 @@ export default function RegisterPage() {
       return false;
     }
     
+    if (formData.role === 'eventAdmin' && !formData.eventId) {
+      setError('Please select an event');
+      return false;
+    }
+    
     if (formData.role === 'teamRepresentative' && (!formData.seasonId || !formData.eventId)) {
       setError('Please select both a season and an event');
+      return false;
+    }
+    
+    if (formData.role === 'teamRepresentative' && !formData.teamId) {
+      setError('Please select a team');
       return false;
     }
     
@@ -164,10 +210,10 @@ export default function RegisterPage() {
 
     try {
       // Replace later by actual API call
-      // this is dummy API call
+      // 
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock registration succes
+      // Mock successful registration
       setSuccess('Registration successful! Please wait for admin approval.');
       
       // Reset form
@@ -178,7 +224,8 @@ export default function RegisterPage() {
         confirmPassword: '',
         role: 'teamRepresentative',
         seasonId: '',
-        eventId: ''
+        eventId: '',
+        teamId: ''
       });
       
       // Redirect to login after 3sec
@@ -239,6 +286,7 @@ export default function RegisterPage() {
                 autoFocus
               />
             </Grid>
+            
             <Grid item xs={12}>
               <TextField
                 required
@@ -252,6 +300,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
               />
             </Grid>
+            
             <Grid item xs={12}>
               <TextField
                 required
@@ -264,6 +313,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
               />
             </Grid>
+            
             <Grid item xs={12}>
               <TextField
                 required
@@ -276,6 +326,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
               />
             </Grid>
+            
             <Grid item xs={12}>
               <FormControl fullWidth>
                 <InputLabel id="role-label">Role</InputLabel>
@@ -318,7 +369,7 @@ export default function RegisterPage() {
               </Grid>
             )}
             
-            {formData.role === 'teamRepresentative' && formData.seasonId && (
+            {formData.seasonId && (
               <Grid item xs={12}>
                 <FormControl fullWidth>
                   <InputLabel id="event-label">Event</InputLabel>
@@ -336,6 +387,31 @@ export default function RegisterPage() {
                     {events.map((event) => (
                       <MenuItem key={event._id} value={event._id}>
                         {event.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+            
+            {formData.role === 'teamRepresentative' && formData.eventId && (
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel id="team-label">Team</InputLabel>
+                  <Select
+                    labelId="team-label"
+                    id="teamId"
+                    name="teamId"
+                    value={formData.teamId}
+                    label="Team"
+                    onChange={handleChange}
+                  >
+                    <MenuItem value="">
+                      <em>Select a Team</em>
+                    </MenuItem>
+                    {teams.map((team) => (
+                      <MenuItem key={team._id} value={team._id}>
+                        {team.name}
                       </MenuItem>
                     ))}
                   </Select>
