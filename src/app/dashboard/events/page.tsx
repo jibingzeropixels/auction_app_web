@@ -14,18 +14,25 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  Select,
-  MenuItem,
   FormControl,
+  Autocomplete,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
-import InfoIcon from "@mui/icons-material/Info";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
-const seasons = [
+type Season = { id: number | "all"; name: string };
+
+const seasons: Season[] = [
   { id: 1, name: "2025-2026" },
   { id: 2, name: "2026-2027" },
+];
+
+// Prepend an "All Seasons" option.
+const seasonOptions: Season[] = [
+  { id: "all", name: "All Seasons" },
+  ...seasons,
 ];
 
 const initialRows = [
@@ -58,7 +65,11 @@ const initialRows = [
 export default function EventsPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSeason, setSelectedSeason] = useState<number | "all">("all");
+  // Default season is "All Seasons"
+  const [selectedSeason, setSelectedSeason] = useState<Season>({
+    id: "all",
+    name: "All Seasons",
+  });
   const [filteredRows, setFilteredRows] = useState(initialRows);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<{
@@ -67,7 +78,7 @@ export default function EventsPage() {
   } | null>(null);
   const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
 
-  // Ref to measure the container's rendered width.
+  // Ref for container width.
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (containerRef.current) {
@@ -76,26 +87,29 @@ export default function EventsPage() {
     }
   }, []);
 
+  // Filter rows based on event search and season selection.
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
     setFilteredRows(
       initialRows.filter(
         (row) =>
-          (selectedSeason === "all" || row.seasonId === selectedSeason) &&
+          (selectedSeason.id === "all" || row.seasonId === selectedSeason.id) &&
           row.name.toLowerCase().includes(value)
       )
     );
   };
 
-  const handleSeasonChange = (event: any) => {
-    const newSeasonId = event.target.value;
-    setSelectedSeason(newSeasonId);
-    setFilteredRows(
-      newSeasonId === "all"
-        ? initialRows
-        : initialRows.filter((row) => row.seasonId === newSeasonId)
-    );
+  // When a season is selected from the Autocomplete.
+  const handleSeasonChange = (event: any, newValue: Season | null) => {
+    if (newValue) {
+      setSelectedSeason(newValue);
+      setFilteredRows(
+        newValue.id === "all"
+          ? initialRows
+          : initialRows.filter((row) => row.seasonId === newValue.id)
+      );
+    }
   };
 
   const handleEdit = (eventId: number) => {
@@ -145,8 +159,8 @@ export default function EventsPage() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 180,
       headerClassName: "super-app-theme--header",
+      width: 180,
       renderCell: (params) => (
         <Box>
           <IconButton
@@ -174,7 +188,7 @@ export default function EventsPage() {
             }}
             color="info"
           >
-            <InfoIcon />
+            <VisibilityIcon />
           </IconButton>
         </Box>
       ),
@@ -191,41 +205,22 @@ export default function EventsPage() {
         Events
       </Typography>
 
-      {/* Season Dropdown Above Search Bar */}
-      <Box
-        sx={{
-          mb: 2,
-          display: "flex",
-          flexDirection: "column",
-          width: "fit-content",
-        }}
-      >
-        <Typography
-          sx={{ mb: 0.5, fontSize: 12, fontWeight: 500, whiteSpace: "nowrap" }}
-        >
-          Season
-        </Typography>
-        <FormControl sx={{ minWidth: "auto" }}>
-          <Select
-            value={selectedSeason}
-            onChange={handleSeasonChange}
-            sx={{
-              height: 40,
-              minWidth: 150,
-              textOverflow: "ellipsis",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <MenuItem value="all">All Seasons</MenuItem>
-            {seasons.map((season) => (
-              <MenuItem key={season.id} value={season.id}>
-                {season.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
+      {/* Season Autocomplete Dropdown */}
+      <FormControl sx={{ minWidth: 150, mb: 2 }}>
+        <Autocomplete
+          disablePortal
+          options={seasonOptions}
+          value={selectedSeason}
+          onChange={handleSeasonChange}
+          getOptionLabel={(option) => option.name}
+          sx={{
+            width: 200,
+            "& .MuiInputBase-root": { height: 40 },
+          }}
+          clearIcon={null}
+          renderInput={(params) => <TextField {...params} label="Season" />}
+        />
+      </FormControl>
 
       {/* Search Bar & Add Event Button */}
       <Box
@@ -243,14 +238,12 @@ export default function EventsPage() {
           sx={{ width: 200 }}
           value={searchTerm}
           onChange={handleSearch}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
           }}
         />
         <Button
@@ -275,7 +268,7 @@ export default function EventsPage() {
             "& .MuiDataGrid-cell": { bgcolor: "white" },
             "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
             "& .super-app-theme--header": {
-              backgroundColor: "#1976d2", // Blue used in the button
+              backgroundColor: "#1976d2",
               color: "white",
               fontWeight: 700,
               borderBottom: "2px solid #115293",

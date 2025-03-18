@@ -14,24 +14,36 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  Select,
-  MenuItem,
   FormControl,
+  Autocomplete,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
-import InfoIcon from "@mui/icons-material/Info";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
-const seasons = [
+type Season = { id: number | "all"; name: string };
+type EventType = { id: number | "all"; name: string; seasonId: number };
+
+const seasons: Season[] = [
   { id: 1, name: "2025-2026" },
   { id: 2, name: "2026-2027" },
 ];
 
-const events = [
+const events: EventType[] = [
   { id: 1, name: "Men's Cricket", seasonId: 1 },
   { id: 2, name: "Women's Cricket", seasonId: 1 },
   { id: 3, name: "Junior Cricket", seasonId: 2 },
+];
+
+// Prepend an "All" option for seasons and events.
+const seasonOptions: Season[] = [
+  { id: "all", name: "All Seasons" },
+  ...seasons,
+];
+const eventOptions: EventType[] = [
+  { id: "all", name: "All Events", seasonId: 0 },
+  ...events,
 ];
 
 const initialTeams = [
@@ -44,8 +56,15 @@ const initialTeams = [
 export default function TeamsPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSeason, setSelectedSeason] = useState<number | "all">("all");
-  const [selectedEvent, setSelectedEvent] = useState<number | "all">("all");
+  const [selectedSeason, setSelectedSeason] = useState<Season>({
+    id: "all",
+    name: "All Seasons",
+  });
+  const [selectedEvent, setSelectedEvent] = useState<EventType>({
+    id: "all",
+    name: "All Events",
+    seasonId: 0,
+  });
   const [filteredTeams, setFilteredTeams] = useState(initialTeams);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<{
@@ -64,38 +83,42 @@ export default function TeamsPage() {
     }
   }, []);
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value.toLowerCase();
+  const filterTeams = (season: Season, event: EventType, search: string) => {
+    setFilteredTeams(
+      initialTeams.filter((team) => {
+        const matchesSeason =
+          season.id === "all" || team.seasonId === season.id;
+        const matchesEvent = event.id === "all" || team.eventId === event.id;
+        const matchesSearch = team.name.toLowerCase().includes(search);
+        return matchesSeason && matchesEvent && matchesSearch;
+      })
+    );
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toLowerCase();
     setSearchTerm(value);
     filterTeams(selectedSeason, selectedEvent, value);
   };
 
-  const handleSeasonChange = (event: any) => {
-    const newSeasonId = event.target.value;
-    setSelectedSeason(newSeasonId);
-    setSelectedEvent("all");
-    filterTeams(newSeasonId, "all", searchTerm);
+  const handleSeasonChange = (event: any, newValue: Season | null) => {
+    if (newValue) {
+      setSelectedSeason(newValue);
+      // Reset event selection to "all" whenever season changes.
+      setSelectedEvent({ id: "all", name: "All Events", seasonId: 0 });
+      filterTeams(
+        newValue,
+        { id: "all", name: "All Events", seasonId: 0 },
+        searchTerm
+      );
+    }
   };
 
-  const handleEventChange = (event: any) => {
-    const newEventId = event.target.value;
-    setSelectedEvent(newEventId);
-    filterTeams(selectedSeason, newEventId, searchTerm);
-  };
-
-  const filterTeams = (
-    season: number | "all",
-    event: number | "all",
-    search: string
-  ) => {
-    setFilteredTeams(
-      initialTeams.filter(
-        (team) =>
-          (season === "all" || team.seasonId === season) &&
-          (event === "all" || team.eventId === event) &&
-          team.name.toLowerCase().includes(search)
-      )
-    );
+  const handleEventChange = (event: any, newValue: EventType | null) => {
+    if (newValue) {
+      setSelectedEvent(newValue);
+      filterTeams(selectedSeason, newValue, searchTerm);
+    }
   };
 
   const handleEdit = (teamId: number) => {
@@ -124,14 +147,13 @@ export default function TeamsPage() {
     {
       field: "name",
       headerName: "Team Name",
-      flex: 1, // Allows the name column to take remaining space
+      flex: 1,
       headerClassName: "super-app-theme--header",
     },
     {
       field: "actions",
       headerName: "Actions",
       sortable: false,
-      flex: 0, // Prevents actions column from taking extra space
       minWidth: 150,
       headerClassName: "super-app-theme--header",
       renderCell: (params) => (
@@ -139,8 +161,8 @@ export default function TeamsPage() {
           sx={{ display: "flex", justifyContent: "flex-end", width: "100%" }}
         >
           <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={(e) => {
+              e.stopPropagation();
               handleEdit(params.row.id);
             }}
             color="primary"
@@ -148,8 +170,8 @@ export default function TeamsPage() {
             <EditIcon />
           </IconButton>
           <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={(e) => {
+              e.stopPropagation();
               handleDeleteClick(params.row);
             }}
             color="error"
@@ -157,13 +179,13 @@ export default function TeamsPage() {
             <DeleteIcon />
           </IconButton>
           <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={(e) => {
+              e.stopPropagation();
               handleInfoClick(params.row);
             }}
             color="info"
           >
-            <InfoIcon />
+            <VisibilityIcon />
           </IconButton>
         </Box>
       ),
@@ -180,53 +202,38 @@ export default function TeamsPage() {
         Teams
       </Typography>
 
-      {/* Season & Event Dropdowns */}
+      {/* Season & Event Autocomplete Dropdowns */}
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mb: 2 }}>
-        <Box sx={{ display: "flex", flexDirection: "column" }}>
-          <Typography sx={{ mb: 0.5, fontSize: 12, fontWeight: 500 }}>
-            Seasons
-          </Typography>
-          <FormControl sx={{ minWidth: 150 }}>
-            <Select
-              value={selectedSeason}
-              onChange={handleSeasonChange}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="all">All Seasons</MenuItem>
-              {seasons.map((season) => (
-                <MenuItem key={season.id} value={season.id}>
-                  {season.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
+        <FormControl sx={{ minWidth: 150 }}>
+          <Autocomplete
+            disablePortal
+            options={seasonOptions}
+            value={selectedSeason}
+            onChange={handleSeasonChange}
+            getOptionLabel={(option) => option.name}
+            sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
+            clearIcon={null}
+            renderInput={(params) => <TextField {...params} label="Season" />}
+          />
+        </FormControl>
 
-        <Box sx={{ display: "flex", flexDirection: "column" }}>
-          <Typography sx={{ mb: 0.5, fontSize: 12, fontWeight: 500 }}>
-            Events
-          </Typography>
-          <FormControl sx={{ minWidth: 150 }}>
-            <Select
-              value={selectedEvent}
-              onChange={handleEventChange}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="all">All Events</MenuItem>
-              {events
-                .filter(
-                  (event) =>
-                    selectedSeason === "all" ||
-                    event.seasonId === selectedSeason
-                )
-                .map((event) => (
-                  <MenuItem key={event.id} value={event.id}>
-                    {event.name}
-                  </MenuItem>
-                ))}
-            </Select>
-          </FormControl>
-        </Box>
+        <FormControl sx={{ minWidth: 150 }}>
+          <Autocomplete
+            disablePortal
+            options={eventOptions.filter(
+              (ev) =>
+                selectedSeason.id === "all" ||
+                ev.seasonId === selectedSeason.id ||
+                ev.id === "all"
+            )}
+            value={selectedEvent}
+            onChange={handleEventChange}
+            getOptionLabel={(option) => option.name}
+            sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
+            clearIcon={null}
+            renderInput={(params) => <TextField {...params} label="Event" />}
+          />
+        </FormControl>
       </Box>
 
       {/* Search Bar & Add Team Button */}
@@ -245,14 +252,12 @@ export default function TeamsPage() {
           sx={{ width: 250 }}
           value={searchTerm}
           onChange={handleSearch}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
           }}
         />
         <Button

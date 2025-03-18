@@ -14,29 +14,46 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  Select,
-  MenuItem,
   FormControl,
+  Autocomplete,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 
-const seasons = [
+type Season = { id: number | "all"; name: string };
+type EventType = { id: number | "all"; name: string; seasonId: number };
+type TeamType = { id: number | "all"; name: string; eventId: number };
+
+const seasons: Season[] = [
   { id: 1, name: "2025-2026" },
   { id: 2, name: "2026-2027" },
 ];
 
-const events = [
+const events: EventType[] = [
   { id: 1, name: "Men's Cricket", seasonId: 1 },
   { id: 2, name: "Women's Cricket", seasonId: 1 },
   { id: 3, name: "Junior Cricket", seasonId: 2 },
 ];
 
-const teams = [
+const teams: TeamType[] = [
   { id: 1, name: "Mumbai Indians", eventId: 1 },
   { id: 2, name: "CSK", eventId: 1 },
   { id: 3, name: "RCB", eventId: 2 },
+];
+
+// Prepend "All" options.
+const seasonOptions: Season[] = [
+  { id: "all", name: "All Seasons" },
+  ...seasons,
+];
+const eventOptions: EventType[] = [
+  { id: "all", name: "All Events", seasonId: 0 },
+  ...events,
+];
+const teamOptions: TeamType[] = [
+  { id: "all", name: "All Teams", eventId: 0 },
+  ...teams,
 ];
 
 const initialRows = [
@@ -48,9 +65,20 @@ const initialRows = [
 export default function PlayersPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSeason, setSelectedSeason] = useState<number | "all">("all");
-  const [selectedEvent, setSelectedEvent] = useState<number | "all">("all");
-  const [selectedTeam, setSelectedTeam] = useState<number | "all">("all");
+  const [selectedSeason, setSelectedSeason] = useState<Season>({
+    id: "all",
+    name: "All Seasons",
+  });
+  const [selectedEvent, setSelectedEvent] = useState<EventType>({
+    id: "all",
+    name: "All Events",
+    seasonId: 0,
+  });
+  const [selectedTeam, setSelectedTeam] = useState<TeamType>({
+    id: "all",
+    name: "All Teams",
+    eventId: 0,
+  });
   const [filteredRows, setFilteredRows] = useState(initialRows);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<{
@@ -65,54 +93,68 @@ export default function PlayersPage() {
   useEffect(() => {
     if (containerRef.current) {
       const measuredWidth = containerRef.current.offsetWidth;
-      // Set maxWidth to the measured width without any cap.
       setComputedMaxWidth(`${measuredWidth}px`);
     }
   }, []);
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value.toLowerCase();
-    setSearchTerm(value);
-    filterData(selectedSeason, selectedEvent, selectedTeam, value);
-  };
-
-  const handleSeasonChange = (event: any) => {
-    setSelectedSeason(event.target.value);
-    setSelectedEvent("all");
-    setSelectedTeam("all");
-    filterData(event.target.value, "all", "all", searchTerm);
-  };
-
-  const handleEventChange = (event: any) => {
-    setSelectedEvent(event.target.value);
-    setSelectedTeam("all");
-    filterData(selectedSeason, event.target.value, "all", searchTerm);
-  };
-
-  const handleTeamChange = (event: any) => {
-    setSelectedTeam(event.target.value);
-    filterData(selectedSeason, selectedEvent, event.target.value, searchTerm);
-  };
-
   const filterData = (
-    seasonId: number | "all",
-    eventId: number | "all",
-    teamId: number | "all",
+    season: Season,
+    event: EventType,
+    team: TeamType,
     search: string
   ) => {
     const filtered = initialRows.filter((row) => {
-      const team = teams.find((t) => t.id === row.teamId);
-      const event = events.find((e) => e.id === team?.eventId);
-      const season = seasons.find((s) => s.id === event?.seasonId);
+      const teamFound = teams.find((t) => t.id === row.teamId);
+      const eventFound = events.find((e) => e.id === teamFound?.eventId);
+      const seasonFound = seasons.find((s) => s.id === eventFound?.seasonId);
 
       return (
-        (seasonId === "all" || season?.id === seasonId) &&
-        (eventId === "all" || event?.id === eventId) &&
-        (teamId === "all" || team?.id === teamId) &&
+        (season.id === "all" || seasonFound?.id === season.id) &&
+        (event.id === "all" || eventFound?.id === event.id) &&
+        (team.id === "all" || teamFound?.id === team.id) &&
         row.name.toLowerCase().includes(search)
       );
     });
     setFilteredRows(filtered);
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toLowerCase();
+    setSearchTerm(value);
+    filterData(selectedSeason, selectedEvent, selectedTeam, value);
+  };
+
+  const handleSeasonChange = (_: any, newValue: Season | null) => {
+    if (newValue) {
+      setSelectedSeason(newValue);
+      // Reset event and team to "All" whenever season changes.
+      const allEvent: EventType = {
+        id: "all",
+        name: "All Events",
+        seasonId: 0,
+      };
+      const allTeam: TeamType = { id: "all", name: "All Teams", eventId: 0 };
+      setSelectedEvent(allEvent);
+      setSelectedTeam(allTeam);
+      filterData(newValue, allEvent, allTeam, searchTerm);
+    }
+  };
+
+  const handleEventChange = (_: any, newValue: EventType | null) => {
+    if (newValue) {
+      setSelectedEvent(newValue);
+      // Reset team to "All" when event changes.
+      const allTeam: TeamType = { id: "all", name: "All Teams", eventId: 0 };
+      setSelectedTeam(allTeam);
+      filterData(selectedSeason, newValue, allTeam, searchTerm);
+    }
+  };
+
+  const handleTeamChange = (_: any, newValue: TeamType | null) => {
+    if (newValue) {
+      setSelectedTeam(newValue);
+      filterData(selectedSeason, selectedEvent, newValue, searchTerm);
+    }
   };
 
   const handleEdit = (playerId: number) => {
@@ -127,7 +169,7 @@ export default function PlayersPage() {
   const confirmDelete = () => {
     if (selectedPlayer) {
       console.log(`Deleting player ${selectedPlayer.id}`);
-      // TODO: Add actual delete logic here
+      // TODO: Add actual delete logic here.
     }
     setOpenDeleteDialog(false);
     setSelectedPlayer(null);
@@ -140,25 +182,18 @@ export default function PlayersPage() {
       flex: 1,
       headerClassName: "super-app-theme--header",
     },
-
     {
       field: "actions",
       headerName: "Actions",
       sortable: false,
       headerClassName: "super-app-theme--header",
-      flex: 0, // Prevents expanding
+      flex: 0,
       minWidth: 150,
       renderCell: (params) => (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            width: "100%",
-          }}
-        >
+        <Box>
           <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={(e) => {
+              e.stopPropagation();
               handleEdit(params.row.id);
             }}
             color="primary"
@@ -166,8 +201,8 @@ export default function PlayersPage() {
             <EditIcon />
           </IconButton>
           <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={(e) => {
+              e.stopPropagation();
               handleDeleteClick(params.row);
             }}
             color="error"
@@ -191,63 +226,54 @@ export default function PlayersPage() {
 
       {/* Dropdown Filters */}
       <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-        <Box>
-          <Typography sx={{ mb: 0.5, fontSize: 12, fontWeight: 500 }}>
-            Season
-          </Typography>
-          <FormControl sx={{ minWidth: 150 }}>
-            <Select
-              value={selectedSeason}
-              onChange={handleSeasonChange}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="all">All Seasons</MenuItem>
-              {seasons.map((season) => (
-                <MenuItem key={season.id} value={season.id}>
-                  {season.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-        <Box>
-          <Typography sx={{ mb: 0.5, fontSize: 12, fontWeight: 500 }}>
-            Event
-          </Typography>
-          <FormControl sx={{ minWidth: 150 }}>
-            <Select
-              value={selectedEvent}
-              onChange={handleEventChange}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="all">All Events</MenuItem>
-              {events.map((event) => (
-                <MenuItem key={event.id} value={event.id}>
-                  {event.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-        <Box>
-          <Typography sx={{ mb: 0.5, fontSize: 12, fontWeight: 500 }}>
-            Team
-          </Typography>
-          <FormControl sx={{ minWidth: 150 }}>
-            <Select
-              value={selectedTeam}
-              onChange={handleTeamChange}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="all">All Teams</MenuItem>
-              {teams.map((team) => (
-                <MenuItem key={team.id} value={team.id}>
-                  {team.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
+        <FormControl sx={{ minWidth: 150 }}>
+          <Autocomplete
+            disablePortal
+            options={seasonOptions}
+            value={selectedSeason}
+            onChange={handleSeasonChange}
+            getOptionLabel={(option) => option.name}
+            sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
+            clearIcon={null}
+            renderInput={(params) => <TextField {...params} label="Season" />}
+          />
+        </FormControl>
+
+        <FormControl sx={{ minWidth: 150 }}>
+          <Autocomplete
+            disablePortal
+            options={eventOptions.filter(
+              (ev) =>
+                selectedSeason.id === "all" ||
+                ev.id === "all" ||
+                ev.seasonId === selectedSeason.id
+            )}
+            value={selectedEvent}
+            onChange={handleEventChange}
+            getOptionLabel={(option) => option.name}
+            sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
+            clearIcon={null}
+            renderInput={(params) => <TextField {...params} label="Event" />}
+          />
+        </FormControl>
+
+        <FormControl sx={{ minWidth: 150 }}>
+          <Autocomplete
+            disablePortal
+            options={teamOptions.filter(
+              (tm) =>
+                selectedEvent.id === "all" ||
+                tm.id === "all" ||
+                tm.eventId === selectedEvent.id
+            )}
+            value={selectedTeam}
+            onChange={handleTeamChange}
+            getOptionLabel={(option) => option.name}
+            sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
+            clearIcon={null}
+            renderInput={(params) => <TextField {...params} label="Team" />}
+          />
+        </FormControl>
       </Box>
 
       {/* Search Bar & Add Player Button */}
@@ -266,14 +292,12 @@ export default function PlayersPage() {
           sx={{ width: 250 }}
           value={searchTerm}
           onChange={handleSearch}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            },
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
           }}
         />
         <Button
