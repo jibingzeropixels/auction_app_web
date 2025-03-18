@@ -4,6 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { authService } from '@/services/auth-service';
+
 import {
   Box,
   Button,
@@ -20,55 +22,54 @@ import {
   SelectChangeEvent
 } from '@mui/material';
 
-// types 
-type Season = {
-    _id: string;
-    name: string;
-  };
-  
-  type Event = {
-    _id: string;
-    name: string;
-    seasonId: string;
-  };
-  
-  type Team = {
-    _id: string;
-    name: string;
-    eventId: string;
-  };
+// Mock seasons data
+const mockSeasons = [
+  { _id: '1', name: 'Season 2024' },
+  { _id: '2', name: 'Season 2025' }
+];
 
-// Mock seasons and events data for now
-const mockSeasons: Season[] = [
-    { _id: '1', name: 'Season 2024' },
-    { _id: '2', name: 'Season 2025' }
-  ];
+// Mock events data
+const mockEvents = [
+  { _id: '101', name: 'Tournament A', seasonId: '1' },
+  { _id: '102', name: 'Tournament B', seasonId: '1' },
+  { _id: '103', name: 'Tournament C', seasonId: '2' }
+];
 
-  const mockEvents: Event[] = [
-    { _id: '101', name: 'Tournament A', seasonId: '1' },
-    { _id: '102', name: 'Tournament B', seasonId: '1' },
-    { _id: '103', name: 'Tournament C', seasonId: '2' }
-  ];
-  
-  // Some mockteams
-  const mockTeams = [
-    { _id: '201', name: 'Team A', eventId: '101' },
-    { _id: '202', name: 'Team B', eventId: '101' },
-    { _id: '203', name: 'Team C', eventId: '102' },
-    { _id: '204', name: 'Team D', eventId: '102' },
-    { _id: '205', name: 'Team E', eventId: '103' },
-  ];
+// Mock teams data
+const mockTeams = [
+  { _id: '201', name: 'Team Alpha', eventId: '101' },
+  { _id: '202', name: 'Team Beta', eventId: '101' },
+  { _id: '203', name: 'Team Gamma', eventId: '102' },
+  { _id: '204', name: 'Team Delta', eventId: '102' },
+  { _id: '205', name: 'Team Epsilon', eventId: '103' },
+];
 
-// define FormData
 interface FormData {
   name: string;
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'teamRepresentative' | 'eventAdmin';
+  role: 'teamRepresentative' | 'eventAdmin' | 'superAdmin';
   seasonId: string;
   eventId: string;
   teamId: string;
+}
+
+interface Season {
+  _id: string;
+  name: string;
+}
+
+interface Event {
+  _id: string;
+  name: string;
+  seasonId: string;
+}
+
+interface Team {
+  _id: string;
+  name: string;
+  eventId: string;
 }
 
 export default function RegisterPage() {
@@ -83,7 +84,6 @@ export default function RegisterPage() {
     eventId: '',
     teamId: ''
   });
-  
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -91,13 +91,11 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Load seasons from api call
   useEffect(() => {
-    // replace with api call 
+    // api call
     setSeasons(mockSeasons);
   }, []);
 
-  // Load events when seasonId changes
   useEffect(() => {
     if (!formData.seasonId) {
       setEvents([]);
@@ -105,7 +103,6 @@ export default function RegisterPage() {
       return;
     }
 
-    // Filter events by seasonId (replace with API call laterr)
     const filteredEvents = mockEvents.filter(
       event => event.seasonId === formData.seasonId
     );
@@ -135,10 +132,11 @@ export default function RegisterPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    });
+    }));
   };
 
   const validateForm = (): boolean => {
@@ -152,7 +150,6 @@ export default function RegisterPage() {
       return false;
     }
     
-    // email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address');
@@ -207,13 +204,31 @@ export default function RegisterPage() {
     }
     
     setLoading(true);
-
+    
     try {
-      // Replace later by actual API call
-      // 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const nameParts = formData.name.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
       
-      // Mock successful registration
+      const adminType = 
+        formData.role === 'teamRepresentative' ? 'teamAdmin' : 
+        formData.role === 'eventAdmin' ? 'eventAdmin' : 'superAdmin';
+      
+      const attributeId = 
+        formData.role === 'teamRepresentative' ? formData.teamId :
+        formData.role === 'eventAdmin' ? formData.eventId : '';
+      
+      const userData = {
+        firstName,
+        lastName,
+        email: formData.email,
+        password: formData.password,
+        adminType,
+        attributeId: attributeId || undefined
+      };
+      
+      await authService.register(userData);
+      
       setSuccess('Registration successful! Please wait for admin approval.');
       
       // Reset form
@@ -228,11 +243,9 @@ export default function RegisterPage() {
         teamId: ''
       });
       
-      // Redirect to login after 3sec
       setTimeout(() => {
         router.push('/login');
       }, 3000);
-      
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
