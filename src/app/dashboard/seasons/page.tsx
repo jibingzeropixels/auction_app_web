@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
@@ -20,8 +20,20 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 
 const initialRows = [
-  { id: 1, name: "2025-2026", startDate: "2025-06-01", endDate: "2026-05-31" },
-  { id: 2, name: "2026-2027", startDate: "2026-06-01", endDate: "2027-05-31" },
+  {
+    id: 1,
+    name: "2025-2026",
+    description: "Upcoming season for 2025-2026",
+    startDate: "2025-06-01",
+    endDate: "2026-05-31",
+  },
+  {
+    id: 2,
+    name: "2026-2027",
+    description: "Future season for 2026-2027",
+    startDate: "2026-06-01",
+    endDate: "2027-05-31",
+  },
 ];
 
 export default function SeasonsPage() {
@@ -33,6 +45,17 @@ export default function SeasonsPage() {
     id: number;
     name: string;
   } | null>(null);
+  const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
+
+  // Ref to measure the container's rendered width.
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const measuredWidth = containerRef.current.offsetWidth;
+      setComputedMaxWidth(`${measuredWidth}px`);
+    }
+  }, []);
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
@@ -61,13 +84,37 @@ export default function SeasonsPage() {
   };
 
   const columns: GridColDef[] = [
-    { field: "name", headerName: "Season Name", width: 200 },
-    { field: "startDate", headerName: "Start Date", width: 150 },
-    { field: "endDate", headerName: "End Date", width: 150 },
+    {
+      field: "name",
+      headerName: "Season Name",
+      flex: 1,
+      minWidth: 150,
+      headerClassName: "super-app-theme--header",
+    },
+    {
+      field: "description",
+      headerName: "Description",
+      flex: 2,
+      minWidth: 200,
+      headerClassName: "super-app-theme--header",
+    },
+    {
+      field: "startDate",
+      headerName: "Start Date",
+      width: 150,
+      headerClassName: "super-app-theme--header",
+    },
+    {
+      field: "endDate",
+      headerName: "End Date",
+      width: 150,
+      headerClassName: "super-app-theme--header",
+    },
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: 150,
+      headerClassName: "super-app-theme--header",
       renderCell: (params) => (
         <Box>
           <IconButton
@@ -94,13 +141,22 @@ export default function SeasonsPage() {
   ];
 
   return (
-    <Box sx={{ width: "100%", p: 2 }}>
+    <Box
+      ref={containerRef}
+      sx={{ width: "100%", p: 2, maxWidth: computedMaxWidth }}
+    >
+      {/* Page Heading */}
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
+        Seasons
+      </Typography>
+
       {/* Search & Add Button */}
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
         <TextField
           variant="outlined"
           placeholder="Search seasons..."
           size="small"
+          sx={{ width: 200 }}
           value={searchTerm}
           onChange={handleSearch}
           slotProps={{
@@ -113,7 +169,6 @@ export default function SeasonsPage() {
             },
           }}
         />
-
         <Button
           variant="contained"
           color="primary"
@@ -123,21 +178,26 @@ export default function SeasonsPage() {
         </Button>
       </Box>
 
-      {/* Data Grid with White Background */}
-
-      <DataGrid
-        rows={filteredRows}
-        columns={columns}
-        sx={{
-          bgcolor: "white", // ✅ Only Data Grid background is white
-          "& .MuiDataGrid-cell": { bgcolor: "white" },
-          "& .MuiDataGrid-columnHeaders": {
+      {/* Data Grid */}
+      <Box sx={{ width: "100%" }}>
+        <DataGrid
+          rows={filteredRows}
+          columns={columns}
+          disableColumnMenu
+          sx={{
+            width: "100%",
             bgcolor: "white",
-            fontWeight: "bold",
-          },
-          "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
-        }}
-      />
+            "& .MuiDataGrid-cell": { bgcolor: "white" },
+            "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+            "& .super-app-theme--header": {
+              backgroundColor: "#1976d2",
+              color: "white",
+              fontWeight: 700,
+              borderBottom: "2px solid #115293",
+            },
+          }}
+        />
+      </Box>
 
       {/* Delete Confirmation Dialog */}
       <Dialog

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
@@ -21,6 +21,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
+import InfoIcon from "@mui/icons-material/Info";
 
 const seasons = [
   { id: 1, name: "2025-2026" },
@@ -51,6 +52,17 @@ export default function TeamsPage() {
     id: number;
     name: string;
   } | null>(null);
+  const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
+
+  // Ref to measure the container's rendered width.
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const measuredWidth = containerRef.current.offsetWidth;
+      setComputedMaxWidth(`${measuredWidth}px`);
+    }
+  }, []);
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
@@ -95,6 +107,10 @@ export default function TeamsPage() {
     setOpenDeleteDialog(true);
   };
 
+  const handleInfoClick = (team: { id: number; name: string }) => {
+    console.log("Info action triggered for", team);
+  };
+
   const confirmDelete = () => {
     if (selectedTeam) {
       console.log(`Deleting team ${selectedTeam.id}`);
@@ -105,13 +121,23 @@ export default function TeamsPage() {
   };
 
   const columns: GridColDef[] = [
-    { field: "name", headerName: "Team Name", width: 250 },
+    {
+      field: "name",
+      headerName: "Team Name",
+      flex: 1, // Allows the name column to take remaining space
+      headerClassName: "super-app-theme--header",
+    },
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      sortable: false,
+      flex: 0, // Prevents actions column from taking extra space
+      minWidth: 150,
+      headerClassName: "super-app-theme--header",
       renderCell: (params) => (
-        <Box>
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", width: "100%" }}
+        >
           <IconButton
             onClick={(event) => {
               event.stopPropagation();
@@ -130,47 +156,29 @@ export default function TeamsPage() {
           >
             <DeleteIcon />
           </IconButton>
+          <IconButton
+            onClick={(event) => {
+              event.stopPropagation();
+              handleInfoClick(params.row);
+            }}
+            color="info"
+          >
+            <InfoIcon />
+          </IconButton>
         </Box>
       ),
     },
   ];
 
   return (
-    <Box sx={{ width: "100%", p: 2 }}>
-      {/* Search Bar & Add Team Button */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 2,
-        }}
-      >
-        <TextField
-          variant="outlined"
-          placeholder="Search teams..."
-          size="small"
-          sx={{ width: 250 }}
-          value={searchTerm}
-          onChange={handleSearch}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{ height: 40 }}
-          onClick={() => router.push("/dashboard/teams/add")}
-        >
-          Add Team
-        </Button>
-      </Box>
+    <Box
+      ref={containerRef}
+      sx={{ width: "100%", p: 2, maxWidth: computedMaxWidth }}
+    >
+      {/* Page Heading */}
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
+        Teams
+      </Typography>
 
       {/* Season & Event Dropdowns */}
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mb: 2 }}>
@@ -221,6 +229,42 @@ export default function TeamsPage() {
         </Box>
       </Box>
 
+      {/* Search Bar & Add Team Button */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <TextField
+          variant="outlined"
+          placeholder="Search teams..."
+          size="small"
+          sx={{ width: 250 }}
+          value={searchTerm}
+          onChange={handleSearch}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ height: 40 }}
+          onClick={() => router.push("/dashboard/teams/add")}
+        >
+          Add Team
+        </Button>
+      </Box>
+
       {/* Data Grid */}
       <DataGrid
         rows={filteredTeams}
@@ -228,11 +272,13 @@ export default function TeamsPage() {
         sx={{
           bgcolor: "white",
           "& .MuiDataGrid-cell": { bgcolor: "white" },
-          "& .MuiDataGrid-columnHeaders": {
-            bgcolor: "white",
-            fontWeight: "bold",
-          },
           "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+          "& .super-app-theme--header": {
+            backgroundColor: "#1976d2",
+            color: "white",
+            fontWeight: 700,
+            borderBottom: "2px solid #115293",
+          },
         }}
       />
 

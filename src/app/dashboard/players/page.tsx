@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
@@ -57,6 +57,18 @@ export default function PlayersPage() {
     id: number;
     name: string;
   } | null>(null);
+  const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
+
+  // Ref to measure the container's rendered width.
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const measuredWidth = containerRef.current.offsetWidth;
+      // Set maxWidth to the measured width without any cap.
+      setComputedMaxWidth(`${measuredWidth}px`);
+    }
+  }, []);
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
@@ -122,13 +134,28 @@ export default function PlayersPage() {
   };
 
   const columns: GridColDef[] = [
-    { field: "name", headerName: "Player Name", width: 250 },
+    {
+      field: "name",
+      headerName: "Player Name",
+      flex: 1,
+      headerClassName: "super-app-theme--header",
+    },
+
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      sortable: false,
+      headerClassName: "super-app-theme--header",
+      flex: 0, // Prevents expanding
+      minWidth: 150,
       renderCell: (params) => (
-        <Box>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            width: "100%",
+          }}
+        >
           <IconButton
             onClick={(event) => {
               event.stopPropagation();
@@ -153,41 +180,14 @@ export default function PlayersPage() {
   ];
 
   return (
-    <Box sx={{ width: "100%", p: 2 }}>
-      {/* Search Bar & Add Player Button */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 2,
-        }}
-      >
-        <TextField
-          variant="outlined"
-          placeholder="Search players..."
-          size="small"
-          sx={{ width: 250 }}
-          value={searchTerm}
-          onChange={handleSearch}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{ height: 40 }}
-          onClick={() => router.push("/dashboard/players/add")}
-        >
-          Add Player
-        </Button>
-      </Box>
+    <Box
+      ref={containerRef}
+      sx={{ width: "100%", p: 2, maxWidth: computedMaxWidth }}
+    >
+      {/* Page Heading */}
+      <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
+        Players
+      </Typography>
 
       {/* Dropdown Filters */}
       <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
@@ -210,7 +210,6 @@ export default function PlayersPage() {
             </Select>
           </FormControl>
         </Box>
-
         <Box>
           <Typography sx={{ mb: 0.5, fontSize: 12, fontWeight: 500 }}>
             Event
@@ -230,7 +229,6 @@ export default function PlayersPage() {
             </Select>
           </FormControl>
         </Box>
-
         <Box>
           <Typography sx={{ mb: 0.5, fontSize: 12, fontWeight: 500 }}>
             Team
@@ -252,6 +250,42 @@ export default function PlayersPage() {
         </Box>
       </Box>
 
+      {/* Search Bar & Add Player Button */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 2,
+        }}
+      >
+        <TextField
+          variant="outlined"
+          placeholder="Search players..."
+          size="small"
+          sx={{ width: 250 }}
+          value={searchTerm}
+          onChange={handleSearch}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ height: 40 }}
+          onClick={() => router.push("/dashboard/players/add")}
+        >
+          Add Player
+        </Button>
+      </Box>
+
       {/* Data Grid */}
       <DataGrid
         rows={filteredRows}
@@ -259,14 +293,17 @@ export default function PlayersPage() {
         sx={{
           bgcolor: "white",
           "& .MuiDataGrid-cell": { bgcolor: "white" },
-          "& .MuiDataGrid-columnHeaders": {
-            bgcolor: "white",
-            fontWeight: "bold",
-          },
           "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+          "& .super-app-theme--header": {
+            backgroundColor: "#1976d2",
+            color: "white",
+            fontWeight: 700,
+            borderBottom: "2px solid #115293",
+          },
         }}
       />
 
+      {/* Delete Confirmation Dialog */}
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
