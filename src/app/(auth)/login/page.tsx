@@ -13,6 +13,7 @@ import {
   Paper,
   Alert
 } from '@mui/material';
+import { authService } from '@/services/auth-service';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,8 +21,8 @@ export default function LoginPage() {
     email: '',
     password: ''
   });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -35,91 +36,43 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    // FOR TESTING ONLY - mock users
     try {
-        const mockUsers = {
-        superAdmin: {
-            id: '1',
-            name: 'Admin User',
-            email: formData.email,
-            role: 'superAdmin'
-        },
-        eventAdmin: {
-            id: '2',
-            name: 'Event Manager',
-            email: formData.email,
-            role: 'eventAdmin',
-            seasonId: '1'
-        },
-        teamRep: {
-            id: '3',
-            name: 'Team Manager',
-            email: formData.email,
-            role: 'teamRepresentative',
-            seasonId: '1',
-            eventId: '101'
-        }
-        };
-    
-        // Choose which mock user to login as based on email
-        let userData;
-        if (formData.email.includes('admin')) {
-        userData = mockUsers.superAdmin;
-        } else if (formData.email.includes('event')) {
-        userData = mockUsers.eventAdmin;
-        } else if (formData.email.includes('team')) {
-        userData = mockUsers.teamRep;
-        } else {
-        // Default to superAdmin
-        userData = mockUsers.superAdmin;
-        }
-    
-        // Store auth data
-        localStorage.setItem('token', 'mock-token');
-        localStorage.setItem('user', JSON.stringify(userData));
-        
-        // Redirect to dashboard
-        router.push('/dashboard');
-    
-    } catch (error) {
-        // Error handling...
-    }
+      const response = await authService.login(formData.email, formData.password);
+      
 
+      // Store token and user info 
+      localStorage.setItem('token', response.token);
+      
+      console.log('Login successful, attempting to navigate to dashboard');
 
-    // for actual api call
+      router.push('/dashboard');
 
-    // try {
-    //     // backend
-    //   const response = await fetch('/api/auth/login', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json'
-    //     },
-    //     body: JSON.stringify(formData)
-    //   });
-
-    //   const data = await response.json();
-
-    //   if (!response.ok) {
-    //     throw new Error(data.message || 'Login failed');
-    //   }
-
-    //   localStorage.setItem('token', data.token);
-    //   localStorage.setItem('user', JSON.stringify(data.user));
-
-    //   // Redirect based on user role
-    //   if (data.user.role === 'superAdmin') {
-    //     router.push('/dashboard/seasons');
-    //   } else if (data.user.role === 'eventAdmin') {
-    //     router.push(`/dashboard/seasons/${data.user.seasonId}/events`);
+      // if (response.user) {
+      //   localStorage.setItem('user', JSON.stringify(response.user));
+      // }
+      
+      // Redirect based on user role (if role information is available)
+    //   if (response.user?.role) {
+    //     if (response.user.role === 'superAdmin') {
+    //       router.push('/dashboard');
+    //     } else if (response.user.role === 'eventAdmin') {
+    //       router.push('/dashboard');
+    //     } else {
+    //       router.push('/dashboard');
+    //     }
     //   } else {
-    //     router.push(`/dashboard/events/${data.user.eventId}`);
+    //     // Default redirect if role info isn't  
+    //     router.push('/dashboard');
     //   }
-    // } catch (error: any) {
-    //   setError(error.message || 'Login failed');
-    // } finally {
-    //   setLoading(false);
-    // }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Login failed');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -184,11 +137,12 @@ export default function LoginPage() {
                 Don't have an account? Register
               </Typography>
             </Link>
-
+          </Box>
+          <Box textAlign="center" sx={{ mt: 1 }}>
             <Link href="/forgot-password">
-                <Typography variant="body2" color="primary">
-                     Forgot password?
-                </Typography>
+              <Typography variant="body2" color="primary">
+                Forgot password?
+              </Typography>
             </Link>
           </Box>
         </Box>
