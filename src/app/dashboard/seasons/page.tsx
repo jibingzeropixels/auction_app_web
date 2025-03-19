@@ -14,38 +14,25 @@ import {
   IconButton,
   TextField,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
-
-const initialRows = [
-  {
-    id: 1,
-    name: "2025-2026",
-    description: "Upcoming season for 2025-2026",
-    startDate: "2025-06-01",
-    endDate: "2026-05-31",
-  },
-  {
-    id: 2,
-    name: "2026-2027",
-    description: "Future season for 2026-2027",
-    startDate: "2026-06-01",
-    endDate: "2027-05-31",
-  },
-];
+import { seasonsService } from "@/services/seasons"; // Adjust the import path as needed
 
 export default function SeasonsPage() {
   const router = useRouter();
+  const [seasons, setSeasons] = useState<any[]>([]);
+  const [filteredRows, setFilteredRows] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredRows, setFilteredRows] = useState(initialRows);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedSeason, setSelectedSeason] = useState<{
-    id: number;
+    _id: string;
     name: string;
   } | null>(null);
   const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
+  const [loading, setLoading] = useState(true);
 
   // Ref to measure the container's rendered width.
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,27 +44,62 @@ export default function SeasonsPage() {
     }
   }, []);
 
+  // Fetch seasons from the backend using the seasonsService.
+  useEffect(() => {
+    const fetchSeasons = async () => {
+      try {
+        const data = await seasonsService.getAllSeasons(
+          "67d4215234760b6857377d8c"
+        );
+        setSeasons(data || []);
+        setFilteredRows(data || []);
+      } catch (error) {
+        console.error("Error fetching seasons:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSeasons();
+  }, []);
+
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
     setFilteredRows(
-      initialRows.filter((row) => row.name.toLowerCase().includes(value))
+      seasons.filter((row) => row.name.toLowerCase().includes(value))
     );
   };
 
-  const handleEdit = (seasonId: number) => {
-    router.push(`/dashboard/seasons/add?edit=${seasonId}`);
+  // Updated handleEdit passes full season details via query parameters
+  const handleEdit = (row: any) => {
+    const { _id, name, desc, startDate, endDate } = row;
+    router.push(
+      `/dashboard/seasons/add?edit=${_id}&name=${encodeURIComponent(
+        name
+      )}&desc=${encodeURIComponent(desc)}&startDate=${encodeURIComponent(
+        startDate
+      )}&endDate=${encodeURIComponent(endDate)}`
+    );
   };
 
-  const handleDeleteClick = (season: { id: number; name: string }) => {
+  const handleDeleteClick = (season: { _id: string; name: string }) => {
     setSelectedSeason(season);
     setOpenDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedSeason) {
-      console.log(`Deleting season ${selectedSeason.id}`);
-      // TODO: Add actual delete logic here
+      try {
+        await seasonsService.deleteSeason(selectedSeason._id);
+        // Remove deleted season from state
+        const updatedSeasons = seasons.filter(
+          (s) => s._id !== selectedSeason._id
+        );
+        setSeasons(updatedSeasons);
+        setFilteredRows(updatedSeasons);
+      } catch (error) {
+        console.error("Delete failed:", error);
+      }
     }
     setOpenDeleteDialog(false);
     setSelectedSeason(null);
@@ -92,7 +114,7 @@ export default function SeasonsPage() {
       headerClassName: "super-app-theme--header",
     },
     {
-      field: "description",
+      field: "desc", // Adjust field to match your API response
       headerName: "Description",
       flex: 2,
       minWidth: 200,
@@ -103,12 +125,16 @@ export default function SeasonsPage() {
       headerName: "Start Date",
       width: 150,
       headerClassName: "super-app-theme--header",
+      renderCell: (params) =>
+        params.value ? String(params.value).slice(0, 10) : "",
     },
     {
       field: "endDate",
       headerName: "End Date",
       width: 150,
       headerClassName: "super-app-theme--header",
+      renderCell: (params) =>
+        params.value ? String(params.value).slice(0, 10) : "",
     },
     {
       field: "actions",
@@ -120,7 +146,7 @@ export default function SeasonsPage() {
           <IconButton
             onClick={(event) => {
               event.stopPropagation();
-              handleEdit(params.row.id);
+              handleEdit(params.row);
             }}
             color="primary"
           >
@@ -180,23 +206,37 @@ export default function SeasonsPage() {
 
       {/* Data Grid */}
       <Box sx={{ width: "100%" }}>
-        <DataGrid
-          rows={filteredRows}
-          columns={columns}
-          disableColumnMenu
-          sx={{
-            width: "100%",
-            bgcolor: "white",
-            "& .MuiDataGrid-cell": { bgcolor: "white" },
-            "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
-            "& .super-app-theme--header": {
-              backgroundColor: "#1976d2",
-              color: "white",
-              fontWeight: 700,
-              borderBottom: "2px solid #115293",
-            },
-          }}
-        />
+        {loading ? (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: 200,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataGrid
+            rows={filteredRows}
+            columns={columns}
+            disableColumnMenu
+            getRowId={(row) => row._id}
+            sx={{
+              width: "100%",
+              bgcolor: "white",
+              "& .MuiDataGrid-cell": { bgcolor: "white" },
+              "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+              "& .super-app-theme--header": {
+                backgroundColor: "#1976d2",
+                color: "white",
+                fontWeight: 700,
+                borderBottom: "2px solid #115293",
+              },
+            }}
+          />
+        )}
       </Box>
 
       {/* Delete Confirmation Dialog */}
