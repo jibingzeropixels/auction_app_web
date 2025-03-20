@@ -61,8 +61,7 @@ export default function LoginPage() {
       //user role
       let userRole = 'user'; // default
       
-      // if (decodedToken.isSuperAdmin) {  // isSuperAdmin is set to false in api response
-      if (decodedToken.userType=="superAdmin") {
+      if (decodedToken.isSuperAdmin) {
         userRole = 'superAdmin';
       } else if (decodedToken.eventAttributes?.some(attr => attr.isAdmin)) {
         userRole = 'eventAdmin';

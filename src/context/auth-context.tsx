@@ -10,6 +10,7 @@ type User = {
   name: string;
   email: string;
   role: UserRole;
+  // userType: UserRole;
   seasonId?: string;
   eventId?: string;
 };
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('user');
+    localStorage.removeItem('user'); 
     localStorage.removeItem('token');
     setUser(null);
   };
