@@ -1,9 +1,9 @@
-// src/app/(auth)/login/page.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import {jwtDecode} from 'jwt-decode';
 import {
   Box,
   Button,
@@ -14,6 +14,19 @@ import {
   Alert
 } from '@mui/material';
 import { authService } from '@/services/auth-service';
+
+//token
+interface DecodedToken {
+  _id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  userType: string | null;
+  isSuperAdmin: boolean;
+  eventAttributes: Array<{id: string, adminStatus: string, isAdmin: boolean}>;
+  teamAttributes: Array<{id: string, adminStatus: string, isAdmin: boolean}>;
+  isActive: boolean;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,32 +52,46 @@ export default function LoginPage() {
     try {
       const response = await authService.login(formData.email, formData.password);
       
-
-      // Store token and user info 
       localStorage.setItem('token', response.token);
       
-      console.log('Login successful, attempting to navigate to dashboard');
-
-      router.push('/dashboard');
-
-      // if (response.user) {
-      //   localStorage.setItem('user', JSON.stringify(response.user));
-      // }
+      // decode
+      const decodedToken = jwtDecode<DecodedToken>(response.token);
+      console.log('Decoded token:', decodedToken);
       
-      // Redirect based on user role (if role information is available)
-    //   if (response.user?.role) {
-    //     if (response.user.role === 'superAdmin') {
-    //       router.push('/dashboard');
-    //     } else if (response.user.role === 'eventAdmin') {
-    //       router.push('/dashboard');
-    //     } else {
-    //       router.push('/dashboard');
-    //     }
-    //   } else {
-    //     // Default redirect if role info isn't  
-    //     router.push('/dashboard');
-    //   }
+      //user role
+      let userRole = 'user'; // default
+      
+      if (decodedToken.isSuperAdmin) {
+        userRole = 'superAdmin';
+      } else if (decodedToken.eventAttributes?.some(attr => attr.isAdmin)) {
+        userRole = 'eventAdmin';
+      } else if (decodedToken.teamAttributes?.some(attr => attr.isAdmin)) {
+        userRole = 'teamRepresentative';
+      }
+      
+      const user = {
+        id: decodedToken._id,
+        name: `${decodedToken.firstName} ${decodedToken.lastName}`,
+        email: decodedToken.email,
+        role: userRole
+      };
+      
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      console.log('Login successful, user role:', userRole);
+      
+      if (userRole === 'superAdmin') {
+        router.push('/dashboard/seasons');
+      } else if (userRole === 'eventAdmin') {
+        router.push('/dashboard/events');
+      } else if (userRole === 'teamRepresentative') {
+        router.push('/dashboard/teams');
+      } else {
+        router.push('/dashboard');
+      }
+      
     } catch (err: unknown) {
+      console.error('Login error:', err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
