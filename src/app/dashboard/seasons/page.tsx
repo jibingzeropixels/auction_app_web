@@ -48,9 +48,7 @@ export default function SeasonsPage() {
   useEffect(() => {
     const fetchSeasons = async () => {
       try {
-        const data = await seasonsService.getAllSeasons(
-          "67d4215234760b6857377d8c"
-        );
+        const data = await seasonsService.getAllSeasons();
         setSeasons(data || []);
         setFilteredRows(data || []);
       } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
@@ -16,115 +16,123 @@ import {
   InputAdornment,
   FormControl,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import { eventsService } from "@/services/events";
+import { seasonsService } from "@/services/seasons";
 
-type Season = { id: number | "all"; name: string };
-
-const seasons: Season[] = [
-  { id: 1, name: "2025-2026" },
-  { id: 2, name: "2026-2027" },
-];
-
-// Prepend an "All Seasons" option.
-const seasonOptions: Season[] = [
-  { id: "all", name: "All Seasons" },
-  ...seasons,
-];
-
-const initialRows = [
-  {
-    id: 1,
-    name: "Men's Cricket",
-    description: "Exciting men's cricket tournament",
-    startDate: "2025-06-01",
-    endDate: "2025-06-15",
-    seasonId: 1,
-  },
-  {
-    id: 2,
-    name: "Women's Cricket",
-    description: "High-level women's cricket competition",
-    startDate: "2025-07-01",
-    endDate: "2025-07-10",
-    seasonId: 1,
-  },
-  {
-    id: 3,
-    name: "Junior Cricket",
-    description: "Up-and-coming talent in junior cricket",
-    startDate: "2025-08-01",
-    endDate: "2025-08-12",
-    seasonId: 2,
-  },
-];
+type Season = { id: string | number; name: string };
 
 export default function EventsPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  // Default season is "All Seasons"
+
+  // Load seasons via API, then prepend "All Seasons"
+  const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<Season>({
     id: "all",
     name: "All Seasons",
   });
-  const [filteredRows, setFilteredRows] = useState(initialRows);
+
+  const [events, setEvents] = useState<any[]>([]);
+  const [filteredRows, setFilteredRows] = useState<any[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<{
-    id: number;
+    _id: string;
     name: string;
   } | null>(null);
   const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
+  const [loading, setLoading] = useState(true);
 
-  // Ref for container width.
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (containerRef.current) {
-      const measuredWidth = containerRef.current.offsetWidth;
-      setComputedMaxWidth(`${measuredWidth}px`);
+      setComputedMaxWidth(`${containerRef.current.offsetWidth}px`);
     }
   }, []);
 
-  // Filter rows based on event search and season selection.
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value.toLowerCase();
-    setSearchTerm(value);
+  // Fetch seasons and events when component mounts.
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Load seasons and prepend "All Seasons"
+        const seasonsData = await seasonsService.getAllSeasons();
+        const formattedSeasons = [
+          { id: "all", name: "All Seasons" },
+          ...seasonsData.map((s: any) => ({ id: s._id || s.id, name: s.name })),
+        ];
+        setSeasons(formattedSeasons);
+        setSelectedSeason(formattedSeasons[0]);
+
+        // Load events from API
+        const eventsData = await eventsService.getAllEvents();
+        setEvents(eventsData);
+        setFilteredRows(eventsData);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // Filter events based on search term and selected season.
+  useEffect(() => {
     setFilteredRows(
-      initialRows.filter(
+      events.filter(
         (row) =>
           (selectedSeason.id === "all" || row.seasonId === selectedSeason.id) &&
-          row.name.toLowerCase().includes(value)
+          row.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
+  }, [searchTerm, selectedSeason, events]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
 
   // When a season is selected from the Autocomplete.
   const handleSeasonChange = (event: any, newValue: Season | null) => {
     if (newValue) {
       setSelectedSeason(newValue);
-      setFilteredRows(
-        newValue.id === "all"
-          ? initialRows
-          : initialRows.filter((row) => row.seasonId === newValue.id)
-      );
     }
   };
 
-  const handleEdit = (eventId: number) => {
-    router.push(`/dashboard/events/add?edit=${eventId}`);
+  // When editing an event, pass full event details as query parameters.
+  const handleEdit = (row: any) => {
+    const { _id, name, desc, startDate, endDate, seasonId } = row;
+    // Format dates to YYYY-MM-DD (if in ISO string format).
+    const formattedStartDate = startDate.split("T")[0];
+    const formattedEndDate = endDate.split("T")[0];
+    router.push(
+      `/dashboard/events/add?edit=${_id}&name=${encodeURIComponent(
+        name
+      )}&desc=${encodeURIComponent(desc)}&startDate=${encodeURIComponent(
+        formattedStartDate
+      )}&endDate=${encodeURIComponent(
+        formattedEndDate
+      )}&seasonId=${encodeURIComponent(seasonId)}`
+    );
   };
 
-  const handleDeleteClick = (event: { id: number; name: string }) => {
-    setSelectedEvent(event);
+  const handleDeleteClick = (row: { _id: string; name: string }) => {
+    setSelectedEvent(row);
     setOpenDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedEvent) {
-      console.log(`Deleting event ${selectedEvent.id}`);
-      // TODO: Add actual delete logic here
+      try {
+        await eventsService.deleteEvent(selectedEvent._id);
+        setEvents((prev) => prev.filter((e) => e._id !== selectedEvent._id));
+      } catch (error) {
+        console.error(`Error deleting event ${selectedEvent._id}:`, error);
+      }
     }
     setOpenDeleteDialog(false);
     setSelectedEvent(null);
@@ -138,7 +146,7 @@ export default function EventsPage() {
       headerClassName: "super-app-theme--header",
     },
     {
-      field: "description",
+      field: "desc",
       headerName: "Description",
       flex: 2,
       minWidth: 200,
@@ -149,24 +157,26 @@ export default function EventsPage() {
       headerName: "Start Date",
       width: 150,
       headerClassName: "super-app-theme--header",
+      renderCell: (params) => (params.value ? params.value.split("T")[0] : ""),
     },
     {
       field: "endDate",
       headerName: "End Date",
       width: 150,
       headerClassName: "super-app-theme--header",
+      renderCell: (params) => (params.value ? params.value.split("T")[0] : ""),
     },
     {
       field: "actions",
       headerName: "Actions",
-      headerClassName: "super-app-theme--header",
       width: 180,
+      headerClassName: "super-app-theme--header",
       renderCell: (params) => (
         <Box>
           <IconButton
             onClick={(event) => {
               event.stopPropagation();
-              handleEdit(params.row.id);
+              handleEdit(params.row);
             }}
             color="primary"
           >
@@ -209,7 +219,7 @@ export default function EventsPage() {
       <FormControl sx={{ minWidth: 150, mb: 2 }}>
         <Autocomplete
           disablePortal
-          options={seasonOptions}
+          options={seasons}
           value={selectedSeason}
           onChange={handleSeasonChange}
           getOptionLabel={(option) => option.name}
@@ -258,23 +268,37 @@ export default function EventsPage() {
 
       {/* Data Grid */}
       <Box sx={{ width: "100%" }}>
-        <DataGrid
-          rows={filteredRows}
-          columns={columns}
-          disableColumnMenu
-          sx={{
-            width: "100%",
-            bgcolor: "white",
-            "& .MuiDataGrid-cell": { bgcolor: "white" },
-            "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
-            "& .super-app-theme--header": {
-              backgroundColor: "#1976d2",
-              color: "white",
-              fontWeight: 700,
-              borderBottom: "2px solid #115293",
-            },
-          }}
-        />
+        {loading ? (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              height: 200,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        ) : (
+          <DataGrid
+            rows={filteredRows}
+            columns={columns}
+            disableColumnMenu
+            getRowId={(row) => row._id}
+            sx={{
+              width: "100%",
+              bgcolor: "white",
+              "& .MuiDataGrid-cell": { bgcolor: "white" },
+              "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+              "& .super-app-theme--header": {
+                backgroundColor: "#1976d2",
+                color: "white",
+                fontWeight: 700,
+                borderBottom: "2px solid #115293",
+              },
+            }}
+          />
+        )}
       </Box>
 
       {/* Delete Confirmation Dialog */}
