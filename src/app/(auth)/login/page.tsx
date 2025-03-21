@@ -17,18 +17,8 @@ import {
 import { authService } from '@/services/auth-service';
 import { useAuth } from '@/context/auth-context';
 
-// Define interface for decoded token to match auth-context
-interface DecodedToken {
-  _id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  userType: string | null;
-  isSuperAdmin: boolean;
-  eventAttributes: Array<{id: string, adminStatus: string, isAdmin: boolean}>;
-  teamAttributes: Array<{id: string, adminStatus: string, isAdmin: boolean}>;
-  isActive: boolean;
-}
+// Import the User interface from auth-context
+import { User } from '@/context/auth-context';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,9 +46,11 @@ export default function LoginPage() {
       // Use the login function from auth context
       const user = await login(formData.email, formData.password);
       
-      console.log('Login successful, user role:', user.role);
+      console.log('Login successful, user:', user);
+      console.log('User role:', user.role);
       
       // Redirect based on role
+      // Redirect based on role with null check
       if (user.role === 'superAdmin') {
         router.push('/dashboard/seasons');
       } else if (user.role === 'eventAdmin') {
@@ -66,7 +58,7 @@ export default function LoginPage() {
       } else if (user.role === 'teamRepresentative') {
         router.push('/dashboard/teams');
       } else {
-        // Default fallback
+        // Default fallback for null or unknown roles
         router.push('/dashboard');
       }
       
