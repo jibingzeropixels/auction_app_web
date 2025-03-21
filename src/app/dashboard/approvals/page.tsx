@@ -16,30 +16,31 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Button,
-  Tooltip,
-  IconButton,
   Chip,
   Alert,
+  Tooltip,
+  IconButton,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle
+  DialogTitle,
+  Button
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 
 // Mock data for pending approvals
 const mockEventAdmins = [
-  { id: '1', name: 'Peter Johnson', email: 'peter@example.com', role: 'eventAdmin', seasonId: '1', seasonName: 'Season 2024', status: 'Pending', createdAt: '2024-03-10' },
-  { id: '2', name: 'Jibin George', email: 'jibin@example.com', role: 'eventAdmin', seasonId: '2', seasonName: 'Season 2025', status: 'Pending', createdAt: '2024-03-11' },
+  { id: '1', name: 'Jibin George', email: 'jibin@example.com', role: 'eventAdmin', seasonId: '1', seasonName: 'Season 2024', eventId: '101', eventName: 'Tournament A', status: 'pending', createdAt: '2024-03-10' },
+  { id: '2', name: 'Peter Johnson', email: 'peter@example.com', role: 'eventAdmin', seasonId: '2', seasonName: 'Season 2025', eventId: '102', eventName: 'Tournament B', status: 'pending', createdAt: '2024-03-11' },
 ];
 
 const mockTeamReps = [
-  { id: '3', name: 'Roshin Rajesh', email: 'roshin@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '101', eventName: 'Tournament A', teamId: '201', teamName: 'Team A', status: 'Pending', createdAt: '2024-03-12' },
-  { id: '4', name: 'Ryan Thomas', email: 'ryan@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '102', eventName: 'Tournament B', teamId: '202', teamName: 'Team B', status: 'Pending', createdAt: '2024-03-13' },
+    { id: '3', name: 'Roshin Rajesh', email: 'roshin@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '101', eventName: 'Tournament A', teamId: '201', teamName: 'Team Alpha', status: 'pending', createdAt: '2024-03-12' },
+    { id: '4', name: 'Ryan Thomas', email: 'ryan@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '102', eventName: 'Tournament B', teamId: '202', teamName: 'Team Beta', status: 'pending', createdAt: '2024-03-13' },
 ];
+  
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -82,7 +83,8 @@ export default function ApprovalsPage() {
   } | null>(null);
 
   useEffect(() => {
-    if (user && user.role !== 'superAdmin') {
+    // Redirect if not authorized (must be superAdmin or eventAdmin)
+    if (user && user.role !== 'superAdmin' && user.role !== 'eventAdmin') {
       router.push('/dashboard');
     }
     
@@ -102,7 +104,7 @@ export default function ApprovalsPage() {
     if (!pendingAction) return;
     
     const { id, type, action } = pendingAction;
-    //api
+    
     if (action === 'approve') {
       if (type === 'eventAdmin') {
         setEventAdmins(prevAdmins => prevAdmins.filter(admin => admin.id !== id));
@@ -111,7 +113,7 @@ export default function ApprovalsPage() {
         setTeamReps(prevReps => prevReps.filter(rep => rep.id !== id));
         setSuccessMessage('Team representative approved successfully');
       }
-    } else {  //api
+    } else {
       if (type === 'eventAdmin') {
         setEventAdmins(prevAdmins => prevAdmins.filter(admin => admin.id !== id));
         setSuccessMessage('Event admin rejected');
@@ -134,7 +136,12 @@ export default function ApprovalsPage() {
     setPendingAction(null);
   };
 
-  if (user?.role !== 'superAdmin') {
+  // Filter approvals based on user role and if they are an event admin, only show team reps for their event
+  const filteredTeamReps = user?.role === 'eventAdmin' && user?.eventId
+    ? teamReps.filter(rep => rep.eventId === user.eventId)
+    : teamReps;
+
+  if (!user || (user.role !== 'superAdmin' && user.role !== 'eventAdmin')) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h6">
@@ -158,74 +165,96 @@ export default function ApprovalsPage() {
       
       <Paper sx={{ width: '100%' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} aria-label="approval tabs">
-            <Tab label="Event Admins" id="approval-tab-0" aria-controls="approval-tabpanel-0" />
-            <Tab label="Team Representatives" id="approval-tab-1" aria-controls="approval-tabpanel-1" />
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange} 
+            aria-label="approval tabs"
+          >
+            {/* Only superAdmins can see and interact with Event Admins tab */}
+            <Tab 
+              label="Event Admins" 
+              id="approval-tab-0" 
+              aria-controls="approval-tabpanel-0" 
+              disabled={user.role !== 'superAdmin'}
+            />
+            <Tab 
+              label="Team Representatives" 
+              id="approval-tab-1" 
+              aria-controls="approval-tabpanel-1" 
+            />
           </Tabs>
         </Box>
         
         <TabPanel value={tabValue} index={0}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Season</TableCell>
-                  <TableCell>Requested On</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {eventAdmins.length === 0 ? (
+          {user.role === 'superAdmin' ? (
+            <TableContainer>
+              <Table>
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={6} align="center">
-                      No pending event admin approvals
-                    </TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Season</TableCell>
+                    <TableCell>Event</TableCell>
+                    <TableCell>Requested On</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="right">Actions</TableCell>
                   </TableRow>
-                ) : (
-                  eventAdmins.map((admin) => (
-                    <TableRow key={admin.id}>
-                      <TableCell>{admin.name}</TableCell>
-                      <TableCell>{admin.email}</TableCell>
-                      <TableCell>{admin.seasonName}</TableCell>
-                      <TableCell>{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Chip label={admin.status} color="warning" size="small" />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Tooltip title="Approve">
-                          <IconButton 
-                            aria-label="Approve request"
-                            onClick={() => handleActionClick(admin.id, 'eventAdmin', 'approve')}
-                            sx={{ 
-                              color: 'text.secondary',
-                              '&:hover': { color: 'success.main' } 
-                            }}
-                          >
-                            <CheckIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Reject">
-                          <IconButton 
-                            aria-label="Reject request"
-                            onClick={() => handleActionClick(admin.id, 'eventAdmin', 'reject')}
-                            sx={{ 
-                              color: 'text.secondary',
-                              '&:hover': { color: 'error.main' } 
-                            }}
-                          >
-                            <CloseIcon />
-                          </IconButton>
-                        </Tooltip>
+                </TableHead>
+                <TableBody>
+                  {eventAdmins.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        No pending event admin approvals
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  ) : (
+                    eventAdmins.map((admin) => (
+                      <TableRow key={admin.id}>
+                        <TableCell>{admin.name}</TableCell>
+                        <TableCell>{admin.email}</TableCell>
+                        <TableCell>{admin.seasonName}</TableCell>
+                        <TableCell>{admin.eventName}</TableCell>
+                        <TableCell>{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Chip label={admin.status} color="warning" size="small" />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Approve">
+                            <IconButton 
+                              aria-label="Approve request"
+                              onClick={() => handleActionClick(admin.id, 'eventAdmin', 'approve')}
+                              sx={{ 
+                                color: 'text.secondary',
+                                '&:hover': { color: 'success.main' } 
+                              }}
+                            >
+                              <CheckIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Reject">
+                            <IconButton 
+                              aria-label="Reject request"
+                              onClick={() => handleActionClick(admin.id, 'eventAdmin', 'reject')}
+                              sx={{ 
+                                color: 'text.secondary',
+                                '&:hover': { color: 'error.main' } 
+                              }}
+                            >
+                              <CloseIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Typography variant="body1" sx={{ p: 2 }}>
+              You don't have permission to manage event admin approvals.
+            </Typography>
+          )}
         </TabPanel>
         
         <TabPanel value={tabValue} index={1}>
@@ -244,14 +273,14 @@ export default function ApprovalsPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {teamReps.length === 0 ? (
+                {filteredTeamReps.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} align="center">
                       No pending team representative approvals
                     </TableCell>
                   </TableRow>
                 ) : (
-                  teamReps.map((rep) => (
+                  filteredTeamReps.map((rep) => (
                     <TableRow key={rep.id}>
                       <TableCell>{rep.name}</TableCell>
                       <TableCell>{rep.email}</TableCell>
@@ -297,7 +326,6 @@ export default function ApprovalsPage() {
         </TabPanel>
       </Paper>
 
-      {/* Confirmation dialog box */}
       <Dialog
         open={confirmDialogOpen}
         onClose={handleCancelAction}

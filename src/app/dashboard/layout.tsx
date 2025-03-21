@@ -26,8 +26,8 @@ import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
 import EventIcon from '@mui/icons-material/Event';
 import GroupsIcon from '@mui/icons-material/Groups';
 import PersonIcon from '@mui/icons-material/Person';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import LogoutIcon from '@mui/icons-material/Logout';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 
 const drawerWidth = 240;
 
@@ -42,9 +42,10 @@ const navigationItems = {
   ],
   eventAdmin: [
     { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { name: 'Events', icon: <EventIcon />, path: '/dashboard/events' },
+    { name: 'My Event', icon: <EventIcon />, path: '/dashboard/my-event' },
     { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
     { name: 'Players', icon: <PersonIcon />, path: '/dashboard/players' },
+    { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
   ],
   teamRepresentative: [
     { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
@@ -55,26 +56,22 @@ const navigationItems = {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { user, logout, isAuthenticated, loading } = useAuth();
+  const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (loading) {
-      return;
+    // Check if user exists in localStorage if not provided by context
+    if (!user) {
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) {
+        router.push('/login');
+        return;
+      }
     }
     
-    if (!isAuthenticated) {
-      router.push('/login');
-    } else if (user && user.role === null) {
-      // User exists but has no valid role
-      logout();
-      router.push('/login?error=invalid-role');
-    } else {
-      // User exists with valid role, component is ready
-      setIsLoading(false);
-    }
-  }, [loading, isAuthenticated, user, router, logout]);
+    setIsLoading(false);
+  }, [user, router]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -90,7 +87,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
-  if (loading || isLoading) {
+  if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <Typography>Loading...</Typography>
@@ -98,19 +95,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user || user.role === null) {
+  const userData = user || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {});
+  
+  if (!userData || !userData.role) {
+    router.push('/login');
     return null;
   }
 
-  let navItems = navigationItems.teamRepresentative;
-  
-  if (user.isSuperAdmin) {
-    navItems = navigationItems.superAdmin;
-  } else if (user.role === 'eventAdmin') {
-    navItems = navigationItems.eventAdmin;
-  } else if (user.role === 'teamRepresentative') {
-    navItems = navigationItems.teamRepresentative;
-  }
+  const userRole = userData.role as keyof typeof navigationItems;
+  const navItems = navigationItems[userRole] || [];
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -121,7 +114,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Typography variant="body1" sx={{ mr: 2 }}>
-              {user.firstName} {user.lastName}
+              {userData.firstName} {userData.lastName}
             </Typography>
             <IconButton 
               onClick={handleMenuOpen}
@@ -131,7 +124,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               aria-haspopup="true"
             >
               <Avatar sx={{ width: 32, height: 32 }}>
-                {user.firstName ? user.firstName.charAt(0) : 'U'}
+                {userData.firstName?.charAt(0) || 'U'}
               </Avatar>
             </IconButton>
             <Menu
@@ -168,9 +161,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <List>
             {navItems.map((item) => (
               <ListItem key={item.name} disablePadding>
-                <ListItemButton 
-                  onClick={() => router.push(item.path)}
-                >
+                <ListItemButton onClick={() => router.push(item.path)}>
                   <ListItemIcon>
                     {item.icon}
                   </ListItemIcon>
