@@ -43,22 +43,20 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Use the login function from auth context
       const user = await login(formData.email, formData.password);
       
       console.log('Login successful, user:', user);
       console.log('User role:', user.role);
       
       // Redirect based on role
-      // Redirect based on role with null check
       if (user.role === 'superAdmin') {
-        router.push('/dashboard/seasons');
+        router.push('/dashboard');
       } else if (user.role === 'eventAdmin') {
-        router.push('/dashboard/events');
+        router.push('/dashboard');
       } else if (user.role === 'teamRepresentative') {
-        router.push('/dashboard/teams');
+        router.push('/dashboard');
       } else {
-        // Default fallback for null or unknown roles
+        // Default fallback for null 
         router.push('/dashboard');
       }
       
