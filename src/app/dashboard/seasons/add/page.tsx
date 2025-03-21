@@ -28,12 +28,16 @@ interface FormData {
 export default function AddSeasonPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Retrieve details from query parameters
+  // Retrieve details from query parameters for edit mode
   const editSeasonId = searchParams.get("edit");
+  // When receiving dates in ISO format, slice out only the date part (YYYY-MM-DD)
   const prepopulatedName = searchParams.get("name") || "";
   const prepopulatedDesc = searchParams.get("desc") || "";
-  const prepopulatedStartDate = searchParams.get("startDate") || "";
-  const prepopulatedEndDate = searchParams.get("endDate") || "";
+  const prepopulatedStartDate = (searchParams.get("startDate") || "").slice(
+    0,
+    10
+  );
+  const prepopulatedEndDate = (searchParams.get("endDate") || "").slice(0, 10);
 
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
@@ -68,7 +72,8 @@ export default function AddSeasonPage() {
     );
   }
 
-  // Pre-populate form if in edit mode using query parameters
+  // Pre-populate form if in edit mode using query parameters.
+  // Slice out only the date part for startDate and endDate.
   useEffect(() => {
     if (editSeasonId) {
       setFormData({
@@ -108,20 +113,17 @@ export default function AddSeasonPage() {
       return false;
     }
 
-    if (!editSeasonId && !formData.startDate) {
+    if (!formData.startDate) {
       setError("Start date is required");
       return false;
     }
 
-    if (!editSeasonId && !formData.endDate) {
+    if (!formData.endDate) {
       setError("End date is required");
       return false;
     }
 
-    if (
-      !editSeasonId &&
-      new Date(formData.startDate) > new Date(formData.endDate)
-    ) {
+    if (new Date(formData.startDate) > new Date(formData.endDate)) {
       setError("End date must be after start date");
       return false;
     }
@@ -142,11 +144,13 @@ export default function AddSeasonPage() {
 
     try {
       if (editSeasonId) {
-        // Update season: Only name and description are updated.
+        // Update season including startDate and endDate (convert to ISO strings if needed)
         await seasonsService.updateSeason({
           seasonId: editSeasonId,
           name: formData.name,
           desc: formData.description,
+          startDate: new Date(formData.startDate).toISOString(),
+          endDate: new Date(formData.endDate).toISOString(),
         });
         setSuccess("Season updated successfully");
       } else {
@@ -257,42 +261,38 @@ export default function AddSeasonPage() {
               helperText={`${descriptionLength}/${MAX_DESCRIPTION_LENGTH}`}
             />
 
-            {/* In edit mode, the date fields are not used */}
-            {!editSeasonId && (
-              <>
-                <TextField
-                  required
-                  fullWidth
-                  id="startDate"
-                  name="startDate"
-                  label="Start Date"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={handleChange}
-                  InputLabelProps={{ shrink: true }}
-                  error={error.includes("start date")}
-                  helperText={
-                    error.includes("start date") ? "Start date is required" : ""
-                  }
-                />
+            {/* Date fields are always shown */}
+            <TextField
+              required
+              fullWidth
+              id="startDate"
+              name="startDate"
+              label="Start Date"
+              type="date"
+              value={formData.startDate}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              error={error.includes("start date")}
+              helperText={
+                error.includes("start date") ? "Start date is required" : ""
+              }
+            />
 
-                <TextField
-                  required
-                  fullWidth
-                  id="endDate"
-                  name="endDate"
-                  label="End Date"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={handleChange}
-                  InputLabelProps={{ shrink: true }}
-                  error={error.includes("end date")}
-                  helperText={
-                    error.includes("end date") ? "End date is required" : ""
-                  }
-                />
-              </>
-            )}
+            <TextField
+              required
+              fullWidth
+              id="endDate"
+              name="endDate"
+              label="End Date"
+              type="date"
+              value={formData.endDate}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+              error={error.includes("end date")}
+              helperText={
+                error.includes("end date") ? "End date is required" : ""
+              }
+            />
 
             <Box
               sx={{

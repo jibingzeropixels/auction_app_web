@@ -1,4 +1,3 @@
-// src/services/seasons.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 console.log("Sending request to:", API_BASE_URL);
 
@@ -11,26 +10,28 @@ const getAuthHeaders = () => {
   };
 };
 
-export const seasonsService = {
-  getAllSeasons: async () => {
+export const eventsService = {
+  getAllEvents: async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/seasons/getAllSeasons`, {
+      const response = await fetch(`${API_BASE_URL}/events/getAllEvents`, {
+        method: "GET",
         headers: getAuthHeaders(),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch seasons");
+        throw new Error(errorData.message || "Failed to fetch events");
       }
 
       return await response.json();
     } catch (error) {
-      console.error("Error fetching seasons:", error);
+      console.error("Error fetching events:", error);
       throw error;
     }
   },
 
-  createSeason: async (seasonData: {
+  createEvent: async (eventData: {
+    seasonId: string;
     name: string;
     desc: string;
     startDate: string;
@@ -38,67 +39,67 @@ export const seasonsService = {
     createdBy: string;
   }) => {
     try {
-      console.log(seasonData);
-      const response = await fetch(`${API_BASE_URL}/seasons/createSeason`, {
+      console.log(eventData);
+      const response = await fetch(`${API_BASE_URL}/events/createEvent`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(seasonData),
+        body: JSON.stringify(eventData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create season");
+        throw new Error(errorData.message || "Failed to create event");
       }
 
       return await response.json();
     } catch (error) {
-      console.error("Error creating season:", error);
+      console.error("Error creating event:", error);
       throw error;
     }
   },
 
-  updateSeason: async (seasonData: {
-    seasonId: string;
+  updateEvent: async (eventData: {
+    eventId: string;
     name: string;
     desc: string;
     startDate: string;
     endDate: string;
   }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/seasons/updateSeason`, {
+      const response = await fetch(`${API_BASE_URL}/events/updateEvent`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(seasonData),
+        body: JSON.stringify(eventData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update season");
+        throw new Error(errorData.message || "Failed to update event");
       }
 
       return await response.json();
     } catch (error) {
-      console.error("Error updating season:", error);
+      console.error("Error updating event:", error);
       throw error;
     }
   },
 
-  deleteSeason: async (seasonId: string) => {
+  deleteEvent: async (eventId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/seasons/deleteSeason`, {
+      const response = await fetch(`${API_BASE_URL}/events/deleteEvent`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify({ seasonId }),
+        body: JSON.stringify({ eventId }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete season");
+        throw new Error(errorData.message || "Failed to delete event");
       }
 
       return await response.json();
     } catch (error) {
-      console.error("Error deleting season:", error);
+      console.error("Error deleting event:", error);
       throw error;
     }
   },
