@@ -106,8 +106,9 @@ export default function AddEventPage() {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h6">
-          You don't have permission to access this page.
+          You don&apos;t have permission to access this page.
         </Typography>
+
         <Button
           variant="contained"
           onClick={() => router.push("/dashboard")}
@@ -210,6 +211,7 @@ export default function AddEventPage() {
         router.push("/dashboard/events");
       }, 2000);
     } catch (err: unknown) {
+      console.error("Error:", err);
       setError("Failed to save event. Please try again.");
     } finally {
       setLoading(false);

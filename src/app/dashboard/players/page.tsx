@@ -124,7 +124,10 @@ export default function PlayersPage() {
     filterData(selectedSeason, selectedEvent, selectedTeam, value);
   };
 
-  const handleSeasonChange = (_: any, newValue: Season | null) => {
+  const handleSeasonChange = (
+    _: React.SyntheticEvent,
+    newValue: Season | null
+  ) => {
     if (newValue) {
       setSelectedSeason(newValue);
       // Reset event and team to "All" whenever season changes.
@@ -140,7 +143,10 @@ export default function PlayersPage() {
     }
   };
 
-  const handleEventChange = (_: any, newValue: EventType | null) => {
+  const handleEventChange = (
+    _: React.SyntheticEvent,
+    newValue: EventType | null
+  ) => {
     if (newValue) {
       setSelectedEvent(newValue);
       // Reset team to "All" when event changes.
@@ -150,7 +156,10 @@ export default function PlayersPage() {
     }
   };
 
-  const handleTeamChange = (_: any, newValue: TeamType | null) => {
+  const handleTeamChange = (
+    _: React.SyntheticEvent,
+    newValue: TeamType | null
+  ) => {
     if (newValue) {
       setSelectedTeam(newValue);
       filterData(selectedSeason, selectedEvent, newValue, searchTerm);

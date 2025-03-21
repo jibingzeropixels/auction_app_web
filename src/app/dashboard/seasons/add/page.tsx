@@ -54,26 +54,7 @@ export default function AddSeasonPage() {
   const [descriptionLength, setDescriptionLength] = useState<number>(0);
   const MAX_DESCRIPTION_LENGTH = 500;
 
-  // Check if super admin
-  if (user?.role !== "superAdmin") {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h6">
-          You don't have permission to access this page.
-        </Typography>
-        <Button
-          variant="contained"
-          onClick={() => router.push("/dashboard")}
-          sx={{ mt: 2 }}
-        >
-          Return to Dashboard
-        </Button>
-      </Box>
-    );
-  }
-
   // Pre-populate form if in edit mode using query parameters.
-  // Slice out only the date part for startDate and endDate.
   useEffect(() => {
     if (editSeasonId) {
       setFormData({
@@ -177,6 +158,7 @@ export default function AddSeasonPage() {
         router.push("/dashboard/seasons");
       }, 2000);
     } catch (err: unknown) {
+      console.error("Error saving season:", err);
       setError("Failed to save season. Please try again.");
     } finally {
       setLoading(false);
@@ -194,6 +176,24 @@ export default function AddSeasonPage() {
     e.preventDefault();
     router.push(path);
   };
+
+  // Instead of conditionally calling hooks by returning early, we render conditionally.
+  if (!user || user.role !== "superAdmin") {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h6">
+          You don&apos;t have permission to access this page.
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => router.push("/dashboard")}
+          sx={{ mt: 2 }}
+        >
+          Return to Dashboard
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Container maxWidth="sm">
@@ -261,7 +261,6 @@ export default function AddSeasonPage() {
               helperText={`${descriptionLength}/${MAX_DESCRIPTION_LENGTH}`}
             />
 
-            {/* Date fields are always shown */}
             <TextField
               required
               fullWidth

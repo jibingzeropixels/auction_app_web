@@ -27,6 +27,15 @@ import { seasonsService } from "@/services/seasons";
 
 type Season = { id: string | number; name: string };
 
+type Event = {
+  _id: string;
+  name: string;
+  desc: string;
+  startDate: string;
+  endDate: string;
+  seasonId: string;
+};
+
 export default function EventsPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,13 +47,11 @@ export default function EventsPage() {
     name: "All Seasons",
   });
 
-  const [events, setEvents] = useState<any[]>([]);
-  const [filteredRows, setFilteredRows] = useState<any[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [filteredRows, setFilteredRows] = useState<Event[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<{
-    _id: string;
-    name: string;
-  } | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
   const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
   const [loading, setLoading] = useState(true);
 
@@ -63,13 +70,13 @@ export default function EventsPage() {
         const seasonsData = await seasonsService.getAllSeasons();
         const formattedSeasons = [
           { id: "all", name: "All Seasons" },
-          ...seasonsData.map((s: any) => ({ id: s._id || s.id, name: s.name })),
+          ...seasonsData.map((s: Season) => ({ id: s.id, name: s.name })),
         ];
         setSeasons(formattedSeasons);
         setSelectedSeason(formattedSeasons[0]);
 
         // Load events from API
-        const eventsData = await eventsService.getAllEvents();
+        const eventsData: Event[] = await eventsService.getAllEvents();
         setEvents(eventsData);
         setFilteredRows(eventsData);
       } catch (error) {
@@ -97,14 +104,17 @@ export default function EventsPage() {
   };
 
   // When a season is selected from the Autocomplete.
-  const handleSeasonChange = (event: any, newValue: Season | null) => {
+  const handleSeasonChange = (
+    _: React.SyntheticEvent,
+    newValue: Season | null
+  ) => {
     if (newValue) {
       setSelectedSeason(newValue);
     }
   };
 
   // When editing an event, pass full event details as query parameters.
-  const handleEdit = (row: any) => {
+  const handleEdit = (row: Event) => {
     const { _id, name, desc, startDate, endDate, seasonId } = row;
     // Format dates to YYYY-MM-DD (if in ISO string format).
     const formattedStartDate = startDate.split("T")[0];
@@ -120,7 +130,7 @@ export default function EventsPage() {
     );
   };
 
-  const handleDeleteClick = (row: { _id: string; name: string }) => {
+  const handleDeleteClick = (row: Event) => {
     setSelectedEvent(row);
     setOpenDeleteDialog(true);
   };

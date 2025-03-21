@@ -101,20 +101,27 @@ export default function TeamsPage() {
     filterTeams(selectedSeason, selectedEvent, value);
   };
 
-  const handleSeasonChange = (event: any, newValue: Season | null) => {
+  const handleSeasonChange = (
+    _: React.SyntheticEvent,
+    newValue: Season | null
+  ) => {
     if (newValue) {
       setSelectedSeason(newValue);
       // Reset event selection to "all" whenever season changes.
-      setSelectedEvent({ id: "all", name: "All Events", seasonId: 0 });
-      filterTeams(
-        newValue,
-        { id: "all", name: "All Events", seasonId: 0 },
-        searchTerm
-      );
+      const resetEvent: EventType = {
+        id: "all",
+        name: "All Events",
+        seasonId: 0,
+      };
+      setSelectedEvent(resetEvent);
+      filterTeams(newValue, resetEvent, searchTerm);
     }
   };
 
-  const handleEventChange = (event: any, newValue: EventType | null) => {
+  const handleEventChange = (
+    _: React.SyntheticEvent,
+    newValue: EventType | null
+  ) => {
     if (newValue) {
       setSelectedEvent(newValue);
       filterTeams(selectedSeason, newValue, searchTerm);
