@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Verify the user has a valid role
       if (userData.role === null) {
-        throw new Error('Your account does not have a valid role assigned. Please contact an administrator.');
+        throw new Error('Your account is awaiting approval.');
       }
       
       localStorage.setItem('user', JSON.stringify(userData));
