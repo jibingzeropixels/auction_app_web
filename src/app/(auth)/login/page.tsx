@@ -1,3 +1,4 @@
+// src/app/(auth)/login/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -14,22 +15,14 @@ import {
   Alert
 } from '@mui/material';
 import { authService } from '@/services/auth-service';
+import { useAuth } from '@/context/auth-context';
 
-//token
-interface DecodedToken {
-  _id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  userType: string | null;
-  isSuperAdmin: boolean;
-  eventAttributes: Array<{id: string, adminStatus: string, isAdmin: boolean}>;
-  teamAttributes: Array<{id: string, adminStatus: string, isAdmin: boolean}>;
-  isActive: boolean;
-}
+// Import the User interface from auth-context
+import { User } from '@/context/auth-context';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -50,44 +43,20 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await authService.login(formData.email, formData.password);
+      const user = await login(formData.email, formData.password);
       
-      localStorage.setItem('token', response.token);
+      console.log('Login successful, user:', user);
+      console.log('User role:', user.role);
       
-      // decode
-      const decodedToken = jwtDecode<DecodedToken>(response.token);
-      console.log('Decoded token:', decodedToken);
-      
-      //user role
-      let userRole = 'user'; // default
-      
-      // if (decodedToken.isSuperAdmin) {  // isSuperAdmin is set to false in api response
-      if (decodedToken.userType=="superAdmin") {
-        userRole = 'superAdmin';
-      } else if (decodedToken.eventAttributes?.some(attr => attr.isAdmin)) {
-        userRole = 'eventAdmin';
-      } else if (decodedToken.teamAttributes?.some(attr => attr.isAdmin)) {
-        userRole = 'teamRepresentative';
-      }
-      
-      const user = {
-        id: decodedToken._id,
-        name: `${decodedToken.firstName} ${decodedToken.lastName}`,
-        email: decodedToken.email,
-        role: userRole
-      };
-      
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      console.log('Login successful, user role:', userRole);
-      
-      if (userRole === 'superAdmin') {
-        router.push('/dashboard/seasons');
-      } else if (userRole === 'eventAdmin') {
-        router.push('/dashboard/events');
-      } else if (userRole === 'teamRepresentative') {
-        router.push('/dashboard/teams');
+      // Redirect based on role
+      if (user.role === 'superAdmin') {
+        router.push('/dashboard');
+      } else if (user.role === 'eventAdmin') {
+        router.push('/dashboard');
+      } else if (user.role === 'teamRepresentative') {
+        router.push('/dashboard');
       } else {
+        // Default fallback for null 
         router.push('/dashboard');
       }
       

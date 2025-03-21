@@ -31,6 +31,16 @@ export default function DashboardPage() {
     return <Typography>Loading...</Typography>;
   }
   
+  // Determine role display text
+  let roleText = 'User';
+  if (userData.isSuperAdmin) {
+    roleText = 'Super Admin';
+  } else if (userData.role === 'eventAdmin') {
+    roleText = 'Event Admin';
+  } else if (userData.role === 'teamRepresentative') {
+    roleText = 'Team Representative';
+  }
+  
   return (
     <>
       <Typography variant="h4" component="h1" gutterBottom>
@@ -39,11 +49,21 @@ export default function DashboardPage() {
       
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Welcome, {userData.name}!
+          Welcome, {userData.firstName} {userData.lastName}!
         </Typography>
         <Typography variant="body1">
-          You are logged in as: <strong>{userData.role}</strong>
+          You are logged in as: <strong>{roleText}</strong>
         </Typography>
+        {userData.eventId && (
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            Managing Event ID: {userData.eventId}
+          </Typography>
+        )}
+        {userData.teamId && (
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            Team ID: {userData.teamId}
+          </Typography>
+        )}
       </Paper>
       
       <Grid container spacing={3}>
@@ -65,7 +85,7 @@ export default function DashboardPage() {
             </Typography>
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2">
-                {userData.role === 'superAdmin' && 'Total Seasons: 3'}
+                {userData.isSuperAdmin && 'Total Seasons: 3'}
                 {userData.role === 'eventAdmin' && 'Total Teams: 8'}
                 {userData.role === 'teamRepresentative' && 'Players Acquired: 0'}
               </Typography>
