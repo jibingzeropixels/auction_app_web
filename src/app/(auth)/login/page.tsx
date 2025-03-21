@@ -1,3 +1,4 @@
+// src/app/(auth)/login/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -14,8 +15,9 @@ import {
   Alert
 } from '@mui/material';
 import { authService } from '@/services/auth-service';
+import { useAuth } from '@/context/auth-context';
 
-//token
+// Define interface for decoded token to match auth-context
 interface DecodedToken {
   _id: string;
   email: string;
@@ -30,6 +32,7 @@ interface DecodedToken {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -50,43 +53,20 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await authService.login(formData.email, formData.password);
+      // Use the login function from auth context
+      const user = await login(formData.email, formData.password);
       
-      localStorage.setItem('token', response.token);
+      console.log('Login successful, user role:', user.role);
       
-      // decode
-      const decodedToken = jwtDecode<DecodedToken>(response.token);
-      console.log('Decoded token:', decodedToken);
-      
-      //user role
-      let userRole = 'user'; // default
-      
-      if (decodedToken.isSuperAdmin) {
-        userRole = 'superAdmin';
-      } else if (decodedToken.eventAttributes?.some(attr => attr.isAdmin)) {
-        userRole = 'eventAdmin';
-      } else if (decodedToken.teamAttributes?.some(attr => attr.isAdmin)) {
-        userRole = 'teamRepresentative';
-      }
-      
-      const user = {
-        id: decodedToken._id,
-        name: `${decodedToken.firstName} ${decodedToken.lastName}`,
-        email: decodedToken.email,
-        role: userRole
-      };
-      
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      console.log('Login successful, user role:', userRole);
-      
-      if (userRole === 'superAdmin') {
+      // Redirect based on role
+      if (user.role === 'superAdmin') {
         router.push('/dashboard/seasons');
-      } else if (userRole === 'eventAdmin') {
+      } else if (user.role === 'eventAdmin') {
         router.push('/dashboard/events');
-      } else if (userRole === 'teamRepresentative') {
+      } else if (user.role === 'teamRepresentative') {
         router.push('/dashboard/teams');
       } else {
+        // Default fallback
         router.push('/dashboard');
       }
       

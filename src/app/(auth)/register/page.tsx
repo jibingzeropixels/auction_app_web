@@ -4,8 +4,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { authService } from '@/services/auth-service';
-
 import {
   Box,
   Button,
@@ -21,21 +19,20 @@ import {
   Grid,
   SelectChangeEvent
 } from '@mui/material';
+import { authService } from '@/services/auth-service';
 
-// Mock seasons data
+// Mock data for seasons, events, teams
 const mockSeasons = [
   { _id: '1', name: 'Season 2024' },
   { _id: '2', name: 'Season 2025' }
 ];
 
-// Mock events data
 const mockEvents = [
   { _id: '101', name: 'Tournament A', seasonId: '1' },
   { _id: '102', name: 'Tournament B', seasonId: '1' },
   { _id: '103', name: 'Tournament C', seasonId: '2' }
 ];
 
-// Mock teams data
 const mockTeams = [
   { _id: '201', name: 'Team Alpha', eventId: '101' },
   { _id: '202', name: 'Team Beta', eventId: '101' },
@@ -45,11 +42,12 @@ const mockTeams = [
 ];
 
 interface FormData {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'teamRepresentative' | 'eventAdmin' | 'superAdmin';
+  role: 'teamRepresentative' | 'eventAdmin';
   seasonId: string;
   eventId: string;
   teamId: string;
@@ -75,7 +73,8 @@ interface Team {
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -140,8 +139,13 @@ export default function RegisterPage() {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.name.trim()) {
-      setError('Name is required');
+    if (!formData.firstName.trim()) {
+      setError('First name is required');
+      return false;
+    }
+    
+    if (!formData.lastName.trim()) {
+      setError('Last name is required');
       return false;
     }
     
@@ -150,6 +154,7 @@ export default function RegisterPage() {
       return false;
     }
     
+    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address');
@@ -206,21 +211,15 @@ export default function RegisterPage() {
     setLoading(true);
     
     try {
-      const nameParts = formData.name.trim().split(' ');
-      const firstName = nameParts[0];
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
-      
       const adminType = 
-        formData.role === 'teamRepresentative' ? 'teamAdmin' : 
-        formData.role === 'eventAdmin' ? 'eventAdmin' : 'superAdmin';
+        formData.role === 'teamRepresentative' ? 'teamAdmin' : 'eventAdmin';
       
       const attributeId = 
-        formData.role === 'teamRepresentative' ? formData.teamId :
-        formData.role === 'eventAdmin' ? formData.eventId : '';
+        formData.role === 'teamRepresentative' ? formData.teamId : formData.eventId;
       
       const userData = {
-        firstName,
-        lastName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
         adminType,
@@ -231,9 +230,9 @@ export default function RegisterPage() {
       
       setSuccess('Registration successful! Please wait for admin approval.');
       
-      // Reset form
       setFormData({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -243,6 +242,7 @@ export default function RegisterPage() {
         teamId: ''
       });
       
+      // Redirect after delay
       setTimeout(() => {
         router.push('/login');
       }, 3000);
@@ -287,16 +287,28 @@ export default function RegisterPage() {
         
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid item xs={12} md={6}>
               <TextField
                 required
                 fullWidth
-                id="name"
-                label="Full Name"
-                name="name"
-                value={formData.name}
+                id="firstName"
+                label="First Name"
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
                 autoFocus
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                required
+                fullWidth
+                id="lastName"
+                label="Last Name"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
               />
             </Grid>
             
