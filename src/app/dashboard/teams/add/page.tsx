@@ -106,13 +106,13 @@ export default function AddTeamPage() {
     if (formData.eventId && !filtered.some(e => e._id === formData.eventId)) {
       setFormData(prev => ({ ...prev, eventId: '' }));
     }
-  }, [formData.seasonId, events]);
+  }, [formData.seasonId, events, formData.eventId]);
 
   if (user?.role !== 'superAdmin' && user?.role !== 'eventAdmin') {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h6">
-          You don't have permission to access this page.
+          You don&apos;t have permission to access this page.
         </Typography>
         <Button 
           variant="contained" 
@@ -178,7 +178,7 @@ export default function AddTeamPage() {
       setTimeout(() => {
         router.push('/dashboard/teams');
       }, 2000);
-    } catch (err: unknown) {
+    } catch {
       setError('Failed to create team. Please try again.');
     } finally {
       setLoading(false);

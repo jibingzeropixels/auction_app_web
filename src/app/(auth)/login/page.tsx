@@ -15,9 +15,7 @@ import {
 } from '@mui/material';
 
 // App imports
-import { authService } from '@/services/auth-service';
 import { useAuth } from '@/context/auth-context';
-import type { User } from '@/context/auth-context';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,11 +44,9 @@ export default function LoginPage() {
       
       console.log('Login successful, user:', user);
       
-      // Safely access role with optional chaining
       const role = user?.role;
       console.log('User role:', role);
       
-      // Handle all role cases with a clean switch statement
       switch (role) {
         case 'superAdmin':
         case 'eventAdmin':

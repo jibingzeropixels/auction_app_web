@@ -61,7 +61,6 @@ interface TeamRep extends EventAdmin {
   teamName: string;
 }
 
-// Mock data for pending approvals
 const mockEventAdmins: EventAdmin[] = [
   { 
     id: '1', 
@@ -120,7 +119,7 @@ const mockTeamReps: TeamRep[] = [
   }
 ];
 
-function TabPanel(props: TabPanelProps): JSX.Element {
+function TabPanel(props: TabPanelProps): React.ReactElement {
   const { children, value, index, ...other } = props;
 
   return (
@@ -140,7 +139,7 @@ function TabPanel(props: TabPanelProps): JSX.Element {
   );
 }
 
-export default function ApprovalsPage(): JSX.Element {
+export default function ApprovalsPage(): React.ReactElement {
   const router = useRouter();
   const { user } = useAuth();
   const [tabValue, setTabValue] = useState<number>(0);
@@ -156,8 +155,6 @@ export default function ApprovalsPage(): JSX.Element {
       router.push('/dashboard');
     }
     
-    // In a real app, this would call an API
-    // fetchPendingApprovals();
   }, [user, router]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
@@ -205,7 +202,7 @@ export default function ApprovalsPage(): JSX.Element {
     setPendingAction(null);
   };
 
-  // Filter approvals based on user role and if they are an event admin, only show team reps for their event
+
   const filteredTeamReps = user?.role === 'eventAdmin' && user?.eventId
     ? teamReps.filter(rep => rep.eventId === user.eventId)
     : teamReps;
