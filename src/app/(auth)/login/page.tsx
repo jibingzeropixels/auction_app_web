@@ -4,7 +4,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {jwtDecode} from 'jwt-decode';
 import {
   Box,
   Button,
@@ -14,11 +13,11 @@ import {
   Paper,
   Alert
 } from '@mui/material';
+
+// App imports
 import { authService } from '@/services/auth-service';
 import { useAuth } from '@/context/auth-context';
-
-// Import the User interface from auth-context
-import { User } from '@/context/auth-context';
+import type { User } from '@/context/auth-context';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,27 +45,23 @@ export default function LoginPage() {
       const user = await login(formData.email, formData.password);
       
       console.log('Login successful, user:', user);
-      console.log('User role:', user.role);
       
-      // Redirect based on role
-      if (user.role === 'superAdmin') {
-        router.push('/dashboard');
-      } else if (user.role === 'eventAdmin') {
-        router.push('/dashboard');
-      } else if (user.role === 'teamRepresentative') {
-        router.push('/dashboard');
-      } else {
-        // Default fallback for null 
-        router.push('/dashboard');
+      // Safely access role with optional chaining
+      const role = user?.role;
+      console.log('User role:', role);
+      
+      // Handle all role cases with a clean switch statement
+      switch (role) {
+        case 'superAdmin':
+        case 'eventAdmin':
+        case 'teamRepresentative':
+        default:
+          router.push('/dashboard');
+          break;
       }
-      
     } catch (err: unknown) {
       console.error('Login error:', err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Login failed');
-      }
+      setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -131,7 +126,7 @@ export default function LoginPage() {
           <Box textAlign="center">
             <Link href="/register">
               <Typography variant="body2" color="primary">
-                Don't have an account? Register
+                Don&apos;t have an account? Register
               </Typography>
             </Link>
           </Box>

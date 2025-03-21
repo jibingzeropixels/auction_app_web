@@ -30,25 +30,97 @@ import {
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 
-// Mock data for pending approvals
-const mockEventAdmins = [
-  { id: '1', name: 'Jibin George', email: 'jibin@example.com', role: 'eventAdmin', seasonId: '1', seasonName: 'Season 2024', eventId: '101', eventName: 'Tournament A', status: 'pending', createdAt: '2024-03-10' },
-  { id: '2', name: 'Peter Johnson', email: 'peter@example.com', role: 'eventAdmin', seasonId: '2', seasonName: 'Season 2025', eventId: '102', eventName: 'Tournament B', status: 'pending', createdAt: '2024-03-11' },
-];
-
-const mockTeamReps = [
-    { id: '3', name: 'Roshin Rajesh', email: 'roshin@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '101', eventName: 'Tournament A', teamId: '201', teamName: 'Team Alpha', status: 'pending', createdAt: '2024-03-12' },
-    { id: '4', name: 'Ryan Thomas', email: 'ryan@example.com', role: 'teamRepresentative', seasonId: '1', seasonName: 'Season 2024', eventId: '102', eventName: 'Tournament B', teamId: '202', teamName: 'Team Beta', status: 'pending', createdAt: '2024-03-13' },
-];
-  
-
+// Type definitions
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) {
+interface PendingAction {
+  id: string;
+  type: 'eventAdmin' | 'teamRep';
+  action: 'approve' | 'reject';
+}
+
+interface EventAdmin {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  seasonId: string;
+  seasonName: string;
+  eventId: string;
+  eventName: string;
+  status: string;
+  createdAt: string;
+}
+
+interface TeamRep extends EventAdmin {
+  teamId: string;
+  teamName: string;
+}
+
+// Mock data for pending approvals
+const mockEventAdmins: EventAdmin[] = [
+  { 
+    id: '1', 
+    name: 'Jibin George', 
+    email: 'jibin@example.com', 
+    role: 'eventAdmin', 
+    seasonId: '1', 
+    seasonName: 'Season 2024', 
+    eventId: '101', 
+    eventName: 'Tournament A', 
+    status: 'pending', 
+    createdAt: '2024-03-10' 
+  },
+  { 
+    id: '2', 
+    name: 'Peter Johnson', 
+    email: 'peter@example.com', 
+    role: 'eventAdmin', 
+    seasonId: '2', 
+    seasonName: 'Season 2025', 
+    eventId: '102', 
+    eventName: 'Tournament B', 
+    status: 'pending', 
+    createdAt: '2024-03-11' 
+  }
+];
+
+const mockTeamReps: TeamRep[] = [
+  { 
+    id: '3', 
+    name: 'Roshin Rajesh', 
+    email: 'roshin@example.com', 
+    role: 'teamRepresentative', 
+    seasonId: '1', 
+    seasonName: 'Season 2024', 
+    eventId: '101', 
+    eventName: 'Tournament A', 
+    teamId: '201', 
+    teamName: 'Team Alpha', 
+    status: 'pending', 
+    createdAt: '2024-03-12' 
+  },
+  { 
+    id: '4', 
+    name: 'Ryan Thomas', 
+    email: 'ryan@example.com', 
+    role: 'teamRepresentative', 
+    seasonId: '1', 
+    seasonName: 'Season 2024', 
+    eventId: '102', 
+    eventName: 'Tournament B', 
+    teamId: '202', 
+    teamName: 'Team Beta', 
+    status: 'pending', 
+    createdAt: '2024-03-13' 
+  }
+];
+
+function TabPanel(props: TabPanelProps): JSX.Element {
   const { children, value, index, ...other } = props;
 
   return (
@@ -68,19 +140,15 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-export default function ApprovalsPage() {
+export default function ApprovalsPage(): JSX.Element {
   const router = useRouter();
   const { user } = useAuth();
-  const [tabValue, setTabValue] = useState(0);
-  const [eventAdmins, setEventAdmins] = useState(mockEventAdmins);
-  const [teamReps, setTeamReps] = useState(mockTeamReps);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{
-    id: string,
-    type: 'eventAdmin' | 'teamRep',
-    action: 'approve' | 'reject'
-  } | null>(null);
+  const [tabValue, setTabValue] = useState<number>(0);
+  const [eventAdmins, setEventAdmins] = useState<EventAdmin[]>(mockEventAdmins);
+  const [teamReps, setTeamReps] = useState<TeamRep[]>(mockTeamReps);
+  const [successMessage, setSuccessMessage] = useState<string>('');
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   useEffect(() => {
     // Redirect if not authorized (must be superAdmin or eventAdmin)
@@ -88,19 +156,20 @@ export default function ApprovalsPage() {
       router.push('/dashboard');
     }
     
+    // In a real app, this would call an API
     // fetchPendingApprovals();
   }, [user, router]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
     setTabValue(newValue);
   };
 
-  const handleActionClick = (id: string, type: 'eventAdmin' | 'teamRep', action: 'approve' | 'reject') => {
+  const handleActionClick = (id: string, type: 'eventAdmin' | 'teamRep', action: 'approve' | 'reject'): void => {
     setPendingAction({ id, type, action });
     setConfirmDialogOpen(true);
   };
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = (): void => {
     if (!pendingAction) return;
     
     const { id, type, action } = pendingAction;
@@ -131,7 +200,7 @@ export default function ApprovalsPage() {
     setPendingAction(null);
   };
 
-  const handleCancelAction = () => {
+  const handleCancelAction = (): void => {
     setConfirmDialogOpen(false);
     setPendingAction(null);
   };
@@ -145,7 +214,7 @@ export default function ApprovalsPage() {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h6">
-          You don't have permission to access this page.
+          You don&apos;t have permission to access this page.
         </Typography>
       </Box>
     );
@@ -252,7 +321,7 @@ export default function ApprovalsPage() {
             </TableContainer>
           ) : (
             <Typography variant="body1" sx={{ p: 2 }}>
-              You don't have permission to manage event admin approvals.
+              You don&apos;t have permission to manage event admin approvals.
             </Typography>
           )}
         </TabPanel>

@@ -21,38 +21,7 @@ import {
 } from '@mui/material';
 import { authService } from '@/services/auth-service';
 
-// Mock data for seasons, events, teams
-const mockSeasons = [
-  { _id: '1', name: 'Season 2024' },
-  { _id: '2', name: 'Season 2025' }
-];
-
-const mockEvents = [
-  { _id: '101', name: 'Tournament A', seasonId: '1' },
-  { _id: '102', name: 'Tournament B', seasonId: '1' },
-  { _id: '103', name: 'Tournament C', seasonId: '2' }
-];
-
-const mockTeams = [
-  { _id: '201', name: 'Team Alpha', eventId: '101' },
-  { _id: '202', name: 'Team Beta', eventId: '101' },
-  { _id: '203', name: 'Team Gamma', eventId: '102' },
-  { _id: '204', name: 'Team Delta', eventId: '102' },
-  { _id: '205', name: 'Team Epsilon', eventId: '103' },
-];
-
-interface FormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  role: 'teamRepresentative' | 'eventAdmin';
-  seasonId: string;
-  eventId: string;
-  teamId: string;
-}
-
+// Type definitions
 interface Season {
   _id: string;
   name: string;
@@ -69,6 +38,38 @@ interface Team {
   name: string;
   eventId: string;
 }
+
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: 'teamRepresentative' | 'eventAdmin';
+  seasonId: string;
+  eventId: string;
+  teamId: string;
+}
+
+// Mock data for seasons, events, teams
+const mockSeasons: Season[] = [
+  { _id: '1', name: 'Season 2024' },
+  { _id: '2', name: 'Season 2025' }
+];
+
+const mockEvents: Event[] = [
+  { _id: '101', name: 'Tournament A', seasonId: '1' },
+  { _id: '102', name: 'Tournament B', seasonId: '1' },
+  { _id: '103', name: 'Tournament C', seasonId: '2' }
+];
+
+const mockTeams: Team[] = [
+  { _id: '201', name: 'Team Alpha', eventId: '101' },
+  { _id: '202', name: 'Team Beta', eventId: '101' },
+  { _id: '203', name: 'Team Gamma', eventId: '102' },
+  { _id: '204', name: 'Team Delta', eventId: '102' },
+  { _id: '205', name: 'Team Epsilon', eventId: '103' }
+];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -91,7 +92,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    // api call
+    // In a real app, this would be an API call
     setSeasons(mockSeasons);
   }, []);
 
@@ -110,7 +111,7 @@ export default function RegisterPage() {
     if (formData.eventId && !filteredEvents.some(e => e._id === formData.eventId)) {
       setFormData(prev => ({ ...prev, eventId: '', teamId: '' }));
     }
-  }, [formData.seasonId]);
+  }, [formData.seasonId, formData.eventId]);
 
   useEffect(() => {
     if (!formData.eventId) {
@@ -127,9 +128,11 @@ export default function RegisterPage() {
     if (formData.teamId && !filteredTeams.some(t => t._id === formData.teamId)) {
       setFormData(prev => ({ ...prev, teamId: '' }));
     }
-  }, [formData.eventId]);
+  }, [formData.eventId, formData.teamId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent
+  ): void => {
     const { name, value } = e.target;
     
     setFormData(prev => ({
@@ -199,7 +202,7 @@ export default function RegisterPage() {
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
     setSuccess('');

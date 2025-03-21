@@ -19,20 +19,26 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
-import { seasonsService } from "@/services/seasons"; // Adjust the import path as needed
+import { seasonsService } from "@/services/seasons";
+
+// Define a type for a season object
+interface Season {
+  _id: string;
+  name: string;
+  desc?: string;
+  startDate?: string;
+  endDate?: string;
+}
 
 export default function SeasonsPage() {
   const router = useRouter();
-  const [seasons, setSeasons] = useState<any[]>([]);
-  const [filteredRows, setFilteredRows] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedSeason, setSelectedSeason] = useState<{
-    _id: string;
-    name: string;
-  } | null>(null);
-  const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
-  const [loading, setLoading] = useState(true);
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [filteredRows, setFilteredRows] = useState<Season[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [openDeleteDialog, setOpenDeleteDialog] = useState<boolean>(false);
+  const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
+  const [computedMaxWidth, setComputedMaxWidth] = useState<string>("100%");
+  const [loading, setLoading] = useState<boolean>(true);
 
   // Ref to measure the container's rendered width.
   const containerRef = useRef<HTMLDivElement>(null);
@@ -48,7 +54,7 @@ export default function SeasonsPage() {
   useEffect(() => {
     const fetchSeasons = async () => {
       try {
-        const data = await seasonsService.getAllSeasons();
+        const data: Season[] = await seasonsService.getAllSeasons();
         setSeasons(data || []);
         setFilteredRows(data || []);
       } catch (error) {
@@ -68,15 +74,15 @@ export default function SeasonsPage() {
     );
   };
 
-  // Updated handleEdit passes full season details via query parameters
-  const handleEdit = (row: any) => {
+  // Updated handleEdit passes full season details via query parameters.
+  const handleEdit = (row: Season) => {
     const { _id, name, desc, startDate, endDate } = row;
     router.push(
       `/dashboard/seasons/add?edit=${_id}&name=${encodeURIComponent(
         name
-      )}&desc=${encodeURIComponent(desc)}&startDate=${encodeURIComponent(
-        startDate
-      )}&endDate=${encodeURIComponent(endDate)}`
+      )}&desc=${encodeURIComponent(desc || "")}&startDate=${encodeURIComponent(
+        startDate || ""
+      )}&endDate=${encodeURIComponent(endDate || "")}`
     );
   };
 
