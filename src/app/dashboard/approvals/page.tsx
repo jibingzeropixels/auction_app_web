@@ -29,9 +29,9 @@ import {
   ListItemText,
   Chip
 } from '@mui/material';
+import { SelectChangeEvent } from '@mui/material/Select';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
-import { SelectChangeEvent } from '@mui/material/Select';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -150,6 +150,7 @@ const mockTeamReps: TeamRep[] = [
 ];
 
 const statusOptions = [
+  { value: 'all', label: 'All', color: 'default' },
   { value: 'pending', label: 'Pending', color: 'warning' },
   { value: 'approved', label: 'Approved', color: 'success' },
   { value: 'rejected', label: 'Rejected', color: 'error' }
@@ -203,13 +204,14 @@ export default function ApprovalsPage(): React.ReactElement {
   const [tabValue, setTabValue] = useState<number>(0);
   const [eventAdmins, setEventAdmins] = useState<EventAdmin[]>(mockEventAdmins);
   const [teamReps, setTeamReps] = useState<TeamRep[]>(mockTeamReps);
-  const [filteredEventAdmins, setFilteredEventAdmins] = useState<EventAdmin[]>(mockEventAdmins);
-  const [filteredTeamReps, setFilteredTeamReps] = useState<TeamRep[]>(mockTeamReps);
+  const [filteredEventAdmins, setFilteredEventAdmins] = useState<EventAdmin[]>([]);
+  const [filteredTeamReps, setFilteredTeamReps] = useState<TeamRep[]>([]);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['pending', 'approved', 'rejected']);
+  // Status filter state - default to showing pending only
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['pending']);
 
   useEffect(() => {
     // Redirect if not authorized (must be superAdmin or eventAdmin)
@@ -220,9 +222,13 @@ export default function ApprovalsPage(): React.ReactElement {
   }, [user, router]);
 
   useEffect(() => {
-    if (selectedStatuses.length === 0) {
+    if (selectedStatuses.includes('all')) {
       setFilteredEventAdmins(eventAdmins);
       setFilteredTeamReps(filterTeamRepsByEvent(teamReps));
+    } else if (selectedStatuses.length === 0) {
+      // If nothing is selected, default to pending
+      setFilteredEventAdmins(eventAdmins.filter(admin => admin.status === 'pending'));
+      setFilteredTeamReps(filterTeamRepsByEvent(teamReps.filter(rep => rep.status === 'pending')));
     } else {
       setFilteredEventAdmins(
         eventAdmins.filter(admin => selectedStatuses.includes(admin.status))
@@ -246,7 +252,14 @@ export default function ApprovalsPage(): React.ReactElement {
 
   const handleStatusFilterChange = (event: SelectChangeEvent<string[]>) => {
     const value = event.target.value as string[];
-    setSelectedStatuses(value);
+    
+    if (value.includes('all') && !selectedStatuses.includes('all')) {
+      setSelectedStatuses(['all', 'pending', 'approved', 'rejected']);
+    } else if (!value.includes('all') && selectedStatuses.includes('all')) {
+      setSelectedStatuses([]);
+    } else {
+      setSelectedStatuses(value);
+    }
   };
 
   const handleActionClick = (id: string, type: 'eventAdmin' | 'teamRep', action: 'approve' | 'reject'): void => {
@@ -318,31 +331,34 @@ export default function ApprovalsPage(): React.ReactElement {
       headerClassName: 'super-app-theme--header'
     },
     { 
-        field: 'createdAt', 
-        headerName: 'Requested On', 
-        width: 150,
-        headerClassName: 'super-app-theme--header',
-        renderCell: (params) => {
-          if (params.value) {
-            const date = new Date(params.value.toString());
-            // Format as dd-mm-yyyy
-            return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
-          }
-          return "";
+      field: 'createdAt', 
+      headerName: 'Requested On', 
+      width: 150,
+      headerClassName: 'super-app-theme--header',
+      renderCell: (params) => {
+        if (params.value) {
+          const date = new Date(params.value.toString());
+          // Format as dd-mm-yyyy
+          return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
         }
-      },
+        return "";
+      }
+    },
     { 
       field: 'status', 
       headerName: 'Status', 
       flex: 0.7,
       headerClassName: 'super-app-theme--header',
-      renderCell: (params) => (
-        <Chip 
-          label={params.value.charAt(0).toUpperCase() + params.value.slice(1)} 
-          color={getStatusChipColor(params.value as ApprovalStatus)} 
-          size="small" 
-        />
-      )
+      renderCell: (params) => {
+        const status = params.value as ApprovalStatus;
+        return (
+          <Chip 
+            label={status.charAt(0).toUpperCase() + status.slice(1)} 
+            color={getStatusChipColor(status)} 
+            size="small" 
+          />
+        );
+      }
     },
     {
       field: 'actions',
@@ -416,30 +432,33 @@ export default function ApprovalsPage(): React.ReactElement {
       headerClassName: 'super-app-theme--header'
     },
     { 
-        field: 'createdAt', 
-        headerName: 'Requested On', 
-        width: 150,
-        headerClassName: 'super-app-theme--header',
-        renderCell: (params) => {
-          if (params.value) {
-            const date = new Date(params.value.toString());
-            return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
-          }
-          return "";
+      field: 'createdAt', 
+      headerName: 'Requested On', 
+      width: 150,
+      headerClassName: 'super-app-theme--header',
+      renderCell: (params) => {
+        if (params.value) {
+          const date = new Date(params.value.toString());
+          return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
         }
-      },
+        return "";
+      }
+    },
     { 
       field: 'status', 
       headerName: 'Status', 
       flex: 0.7,
       headerClassName: 'super-app-theme--header',
-      renderCell: (params) => (
-        <Chip 
-          label={params.value.charAt(0).toUpperCase() + params.value.slice(1)} 
-          color={getStatusChipColor(params.value as ApprovalStatus)} 
-          size="small" 
-        />
-      )
+      renderCell: (params) => {
+        const status = params.value as ApprovalStatus;
+        return (
+          <Chip 
+            label={status.charAt(0).toUpperCase() + status.slice(1)} 
+            color={getStatusChipColor(status)} 
+            size="small" 
+          />
+        );
+      }
     },
     {
       field: 'actions',
@@ -503,7 +522,6 @@ export default function ApprovalsPage(): React.ReactElement {
         </Alert>
       )}
       
-      {/* Status Filter */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <FormControl sx={{ width: 300 }}>
           <InputLabel id="status-filter-label">Status Filter</InputLabel>
@@ -515,7 +533,7 @@ export default function ApprovalsPage(): React.ReactElement {
             onChange={handleStatusFilterChange}
             input={<OutlinedInput label="Status Filter" />}
             renderValue={(selected) => {
-              if (selected.length === statusOptions.length) return 'All';
+              if (selected.includes('all')) return 'All';
               if (selected.length === 0) return 'None';
               return selected
                 .map(value => statusOptions.find(option => option.value === value)?.label)
@@ -527,12 +545,14 @@ export default function ApprovalsPage(): React.ReactElement {
               <MenuItem key={option.value} value={option.value}>
                 <Checkbox checked={selectedStatuses.indexOf(option.value) > -1} />
                 <ListItemText primary={option.label} />
-                <Chip 
-                  label={option.label} 
-                  size="small" 
-                  color={option.color as 'warning' | 'success' | 'error'} 
-                  sx={{ ml: 1 }} 
-                />
+                {option.value !== 'all' && (
+                  <Chip 
+                    label={option.label} 
+                    size="small" 
+                    color={option.color as 'default' | 'warning' | 'success' | 'error'} 
+                    sx={{ ml: 1 }} 
+                  />
+                )}
               </MenuItem>
             ))}
           </Select>
