@@ -4,19 +4,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
+import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import {
   Typography,
   Box,
   Paper,
   Tabs,
   Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
   Alert,
   Tooltip,
   IconButton,
@@ -32,14 +26,13 @@ import {
   MenuItem,
   OutlinedInput,
   Checkbox,
-  ListItemText
+  ListItemText,
+  Chip
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { SelectChangeEvent } from '@mui/material/Select';
 
-
-// Type definitions
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -96,6 +89,18 @@ const mockEventAdmins: EventAdmin[] = [
     eventName: 'Tournament B', 
     status: 'approved', 
     createdAt: '2024-03-11' 
+  },
+  { 
+    id: '3', 
+    name: 'John Doe', 
+    email: 'john@example.com', 
+    role: 'eventAdmin', 
+    seasonId: '1', 
+    seasonName: 'Season 2024', 
+    eventId: '103', 
+    eventName: 'Tournament C', 
+    status: 'rejected', 
+    createdAt: '2024-03-09' 
   }
 ];
 
@@ -127,6 +132,20 @@ const mockTeamReps: TeamRep[] = [
     teamName: 'Team Beta', 
     status: 'approved', 
     createdAt: '2024-03-13' 
+  },
+  { 
+    id: '6', 
+    name: 'John Smith', 
+    email: 'jsmith@example.com', 
+    role: 'teamRepresentative', 
+    seasonId: '2', 
+    seasonName: 'Season 2025', 
+    eventId: '103', 
+    eventName: 'Tournament C', 
+    teamId: '203', 
+    teamName: 'Team Gamma', 
+    status: 'rejected', 
+    createdAt: '2024-03-11' 
   }
 ];
 
@@ -193,6 +212,7 @@ export default function ApprovalsPage(): React.ReactElement {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['pending', 'approved', 'rejected']);
 
   useEffect(() => {
+    // Redirect if not authorized (must be superAdmin or eventAdmin)
     if (user && user.role !== 'superAdmin' && user.role !== 'eventAdmin') {
       router.push('/dashboard');
     }
@@ -272,6 +292,195 @@ export default function ApprovalsPage(): React.ReactElement {
     setPendingAction(null);
   };
 
+  const eventAdminColumns: GridColDef[] = [
+    { 
+      field: 'name', 
+      headerName: 'Name', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+      field: 'email', 
+      headerName: 'Email', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+      field: 'seasonName', 
+      headerName: 'Season', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+      field: 'eventName', 
+      headerName: 'Event', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+        field: 'createdAt', 
+        headerName: 'Requested On', 
+        width: 150,
+        headerClassName: 'super-app-theme--header',
+        renderCell: (params) => {
+          if (params.value) {
+            const date = new Date(params.value.toString());
+            // Format as dd-mm-yyyy
+            return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+          }
+          return "";
+        }
+      },
+    { 
+      field: 'status', 
+      headerName: 'Status', 
+      flex: 0.7,
+      headerClassName: 'super-app-theme--header',
+      renderCell: (params) => (
+        <Chip 
+          label={params.value.charAt(0).toUpperCase() + params.value.slice(1)} 
+          color={getStatusChipColor(params.value as ApprovalStatus)} 
+          size="small" 
+        />
+      )
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 0.7,
+      headerClassName: 'super-app-theme--header',
+      renderCell: (params) => (
+        <Box>
+          {params.row.status === 'pending' && (
+            <>
+              <Tooltip title="Approve">
+                <IconButton 
+                  aria-label="Approve request"
+                  onClick={() => handleActionClick(params.row.id, 'eventAdmin', 'approve')}
+                  sx={{ 
+                    color: 'text.secondary',
+                    '&:hover': { color: 'success.main' } 
+                  }}
+                >
+                  <CheckIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Reject">
+                <IconButton 
+                  aria-label="Reject request"
+                  onClick={() => handleActionClick(params.row.id, 'eventAdmin', 'reject')}
+                  sx={{ 
+                    color: 'text.secondary',
+                    '&:hover': { color: 'error.main' } 
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+        </Box>
+      )
+    }
+  ];
+
+  const teamRepColumns: GridColDef[] = [
+    { 
+      field: 'name', 
+      headerName: 'Name', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+      field: 'email', 
+      headerName: 'Email', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+      field: 'seasonName', 
+      headerName: 'Season', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+      field: 'eventName', 
+      headerName: 'Event', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+      field: 'teamName', 
+      headerName: 'Team', 
+      flex: 1,
+      headerClassName: 'super-app-theme--header'
+    },
+    { 
+        field: 'createdAt', 
+        headerName: 'Requested On', 
+        width: 150,
+        headerClassName: 'super-app-theme--header',
+        renderCell: (params) => {
+          if (params.value) {
+            const date = new Date(params.value.toString());
+            return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+          }
+          return "";
+        }
+      },
+    { 
+      field: 'status', 
+      headerName: 'Status', 
+      flex: 0.7,
+      headerClassName: 'super-app-theme--header',
+      renderCell: (params) => (
+        <Chip 
+          label={params.value.charAt(0).toUpperCase() + params.value.slice(1)} 
+          color={getStatusChipColor(params.value as ApprovalStatus)} 
+          size="small" 
+        />
+      )
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 0.7,
+      headerClassName: 'super-app-theme--header',
+      renderCell: (params) => (
+        <Box>
+          {params.row.status === 'pending' && (
+            <>
+              <Tooltip title="Approve">
+                <IconButton 
+                  aria-label="Approve request"
+                  onClick={() => handleActionClick(params.row.id, 'teamRep', 'approve')}
+                  sx={{ 
+                    color: 'text.secondary',
+                    '&:hover': { color: 'success.main' } 
+                  }}
+                >
+                  <CheckIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Reject">
+                <IconButton 
+                  aria-label="Reject request"
+                  onClick={() => handleActionClick(params.row.id, 'teamRep', 'reject')}
+                  sx={{ 
+                    color: 'text.secondary',
+                    '&:hover': { color: 'error.main' } 
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+        </Box>
+      )
+    }
+  ];
+
   if (!user || (user.role !== 'superAdmin' && user.role !== 'eventAdmin')) {
     return (
       <Box sx={{ p: 3 }}>
@@ -294,6 +503,7 @@ export default function ApprovalsPage(): React.ReactElement {
         </Alert>
       )}
       
+      {/* Status Filter */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <FormControl sx={{ width: 300 }}>
           <InputLabel id="status-filter-label">Status Filter</InputLabel>
@@ -352,77 +562,26 @@ export default function ApprovalsPage(): React.ReactElement {
         
         <TabPanel value={tabValue} index={0}>
           {user.role === 'superAdmin' ? (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Season</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Event</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Requested On</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredEventAdmins.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        No event admin approvals matching the selected filters
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredEventAdmins.map((admin) => (
-                      <TableRow key={admin.id}>
-                        <TableCell>{admin.name}</TableCell>
-                        <TableCell>{admin.email}</TableCell>
-                        <TableCell>{admin.seasonName}</TableCell>
-                        <TableCell>{admin.eventName}</TableCell>
-                        <TableCell>{new Date(admin.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Chip 
-                            label={admin.status.charAt(0).toUpperCase() + admin.status.slice(1)} 
-                            color={getStatusChipColor(admin.status)} 
-                            size="small" 
-                          />
-                        </TableCell>
-                        <TableCell align="right">
-                          {admin.status === 'pending' && (
-                            <>
-                              <Tooltip title="Approve">
-                                <IconButton 
-                                  aria-label="Approve request"
-                                  onClick={() => handleActionClick(admin.id, 'eventAdmin', 'approve')}
-                                  sx={{ 
-                                    color: 'text.secondary',
-                                    '&:hover': { color: 'success.main' } 
-                                  }}
-                                >
-                                  <CheckIcon />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Reject">
-                                <IconButton 
-                                  aria-label="Reject request"
-                                  onClick={() => handleActionClick(admin.id, 'eventAdmin', 'reject')}
-                                  sx={{ 
-                                    color: 'text.secondary',
-                                    '&:hover': { color: 'error.main' } 
-                                  }}
-                                >
-                                  <CloseIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <Box sx={{ height: 400, width: '100%' }}>
+              <DataGrid
+                rows={filteredEventAdmins}
+                columns={eventAdminColumns}
+                disableColumnMenu
+                getRowId={(row) => row.id}
+                sx={{
+                  width: '100%',
+                  bgcolor: 'white',
+                  '& .MuiDataGrid-cell': { bgcolor: 'white' },
+                  '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
+                  '& .super-app-theme--header': {
+                    backgroundColor: '#1976d2',
+                    color: 'white',
+                    fontWeight: 700,
+                    borderBottom: '2px solid #115293',
+                  },
+                }}
+              />
+            </Box>
           ) : (
             <Typography variant="body1" sx={{ p: 2 }}>
               You don&apos;t have permission to manage event admin approvals.
@@ -431,79 +590,26 @@ export default function ApprovalsPage(): React.ReactElement {
         </TabPanel>
         
         <TabPanel value={tabValue} index={1}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Season</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Event</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Team</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Requested On</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredTeamReps.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center">
-                      No team representative approvals matching the selected filters
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredTeamReps.map((rep) => (
-                    <TableRow key={rep.id}>
-                      <TableCell>{rep.name}</TableCell>
-                      <TableCell>{rep.email}</TableCell>
-                      <TableCell>{rep.seasonName}</TableCell>
-                      <TableCell>{rep.eventName}</TableCell>
-                      <TableCell>{rep.teamName}</TableCell>
-                      <TableCell>{new Date(rep.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={rep.status.charAt(0).toUpperCase() + rep.status.slice(1)} 
-                          color={getStatusChipColor(rep.status)} 
-                          size="small" 
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        {rep.status === 'pending' && (
-                          <>
-                            <Tooltip title="Approve">
-                              <IconButton 
-                                aria-label="Approve request"
-                                onClick={() => handleActionClick(rep.id, 'teamRep', 'approve')}
-                                sx={{ 
-                                  color: 'text.secondary',
-                                  '&:hover': { color: 'success.main' } 
-                                }}
-                              >
-                                <CheckIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Reject">
-                              <IconButton 
-                                aria-label="Reject request"
-                                onClick={() => handleActionClick(rep.id, 'teamRep', 'reject')}
-                                sx={{ 
-                                  color: 'text.secondary',
-                                  '&:hover': { color: 'error.main' } 
-                                }}
-                              >
-                                <CloseIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <Box sx={{ height: 400, width: '100%' }}>
+            <DataGrid
+              rows={filteredTeamReps}
+              columns={teamRepColumns}
+              disableColumnMenu
+              getRowId={(row) => row.id}
+              sx={{
+                width: '100%',
+                bgcolor: 'white',
+                '& .MuiDataGrid-cell': { bgcolor: 'white' },
+                '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
+                '& .super-app-theme--header': {
+                  backgroundColor: '#1976d2',
+                  color: 'white',
+                  fontWeight: 700,
+                  borderBottom: '2px solid #115293',
+                },
+              }}
+            />
+          </Box>
         </TabPanel>
       </Paper>
 
