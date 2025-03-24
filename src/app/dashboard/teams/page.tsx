@@ -16,83 +16,158 @@ import {
   InputAdornment,
   FormControl,
   Autocomplete,
+  CircularProgress,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import { teamsService } from "@/services/teams";
+import { seasonsService } from "@/services/seasons";
+import { eventsService } from "@/services/events";
 
-type Season = { id: number | "all"; name: string };
-type EventType = { id: number | "all"; name: string; seasonId: number };
+// Data types
+type Season = {
+  _id: string;
+  name: string;
+  desc?: string;
+  startDate?: string;
+  endDate?: string;
+  createdBy?: string;
+};
 
-const seasons: Season[] = [
-  { id: 1, name: "2025-2026" },
-  { id: 2, name: "2026-2027" },
-];
+type EventType = {
+  _id: string;
+  name: string;
+  seasonId: string;
+  desc?: string;
+  startDate?: string;
+  endDate?: string;
+  createdBy?: string;
+};
 
-const events: EventType[] = [
-  { id: 1, name: "Men's Cricket", seasonId: 1 },
-  { id: 2, name: "Women's Cricket", seasonId: 1 },
-  { id: 3, name: "Junior Cricket", seasonId: 2 },
-];
+type Team = { _id: string; name: string; eventId: string };
 
-// Prepend an "All" option for seasons and events.
-const seasonOptions: Season[] = [
-  { id: "all", name: "All Seasons" },
-  ...seasons,
-];
-const eventOptions: EventType[] = [
-  { id: "all", name: "All Events", seasonId: 0 },
-  ...events,
-];
-
-const initialTeams = [
-  { id: 1, name: "Mumbai Indians", eventId: 1, seasonId: 1 },
-  { id: 2, name: "CSK", eventId: 1, seasonId: 1 },
-  { id: 3, name: "RCB", eventId: 2, seasonId: 1 },
-  { id: 4, name: "Delhi Capitals", eventId: 3, seasonId: 2 },
-];
+// Extended team includes extra fields for display.
+type ExtendedTeam = Team & {
+  seasonName: string;
+  eventName: string;
+};
 
 export default function TeamsPage() {
   const router = useRouter();
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSeason, setSelectedSeason] = useState<Season>({
-    id: "all",
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [events, setEvents] = useState<EventType[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [extendedTeams, setExtendedTeams] = useState<ExtendedTeam[]>([]);
+  const [filteredTeams, setFilteredTeams] = useState<ExtendedTeam[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState<
+    Season | { _id: "all"; name: string }
+  >({
+    _id: "all",
     name: "All Seasons",
   });
-  const [selectedEvent, setSelectedEvent] = useState<EventType>({
-    id: "all",
+  const [selectedEvent, setSelectedEvent] = useState<
+    EventType | { _id: "all"; name: string; seasonId: "all" }
+  >({
+    _id: "all",
     name: "All Events",
-    seasonId: 0,
+    seasonId: "all",
   });
-  const [filteredTeams, setFilteredTeams] = useState(initialTeams);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<{
-    id: number;
-    name: string;
-  } | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
+  const [loading, setLoading] = useState(true);
 
-  // Ref to measure the container's rendered width.
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (containerRef.current) {
-      const measuredWidth = containerRef.current.offsetWidth;
-      setComputedMaxWidth(`${measuredWidth}px`);
+      setComputedMaxWidth(`${containerRef.current.offsetWidth}px`);
     }
   }, []);
 
-  const filterTeams = (season: Season, event: EventType, search: string) => {
-    setFilteredTeams(
-      initialTeams.filter((team) => {
-        const matchesSeason =
-          season.id === "all" || team.seasonId === season.id;
-        const matchesEvent = event.id === "all" || team.eventId === event.id;
-        const matchesSearch = team.name.toLowerCase().includes(search);
-        return matchesSeason && matchesEvent && matchesSearch;
-      })
-    );
+  // Fetch seasons, events, and teams from APIs.
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [fetchedSeasons, fetchedEvents, fetchedTeams] = await Promise.all(
+          [
+            seasonsService.getAllSeasons(),
+            eventsService.getAllEvents(),
+            teamsService.getAllTeams(),
+          ]
+        );
+        setSeasons(fetchedSeasons);
+        setEvents(fetchedEvents);
+        setTeams(fetchedTeams);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  // Function to extend teams with seasonName and eventName.
+  const extendTeams = (
+    teams: Team[],
+    events: EventType[],
+    seasons: Season[]
+  ): ExtendedTeam[] => {
+    return teams.map((team) => ({
+      ...team,
+      eventName: (() => {
+        const ev = events.find((e) => e._id === team.eventId);
+        return ev ? ev.name : "Unknown Event";
+      })(),
+      seasonName: (() => {
+        const teamEvent = events.find((e) => e._id === team.eventId);
+        if (!teamEvent) return "Unknown Season";
+        const season = seasons.find((s) => s._id === teamEvent.seasonId);
+        return season ? season.name : "Unknown Season";
+      })(),
+    }));
+  };
+
+  // Recalculate extendedTeams whenever teams, events, or seasons change.
+  useEffect(() => {
+    const extTeams = extendTeams(teams, events, seasons);
+    setExtendedTeams(extTeams);
+    // Also update the filtered list if no filter is active.
+    setFilteredTeams(extTeams);
+  }, [teams, events, seasons]);
+
+  // Build options for dropdowns.
+  const seasonOptions: (Season | { _id: "all"; name: string })[] = [
+    { _id: "all", name: "All Seasons" },
+    ...seasons,
+  ];
+  const eventOptions: (
+    | EventType
+    | { _id: "all"; name: string; seasonId: "all" }
+  )[] = [{ _id: "all", name: "All Events", seasonId: "all" }, ...events];
+
+  // Filter extendedTeams based on selected season, event, and search.
+  const filterTeams = (
+    season: Season | { _id: "all"; name: string },
+    event: EventType | { _id: "all"; name: string; seasonId: "all" },
+    search: string
+  ) => {
+    const filtered = extendedTeams.filter((team) => {
+      const matchesSeason =
+        season._id === "all" ||
+        team.seasonName === seasons.find((s) => s._id === season._id)?.name;
+      const matchesEvent =
+        event._id === "all" ||
+        team.eventName === events.find((e) => e._id === event._id)?.name;
+      const matchesSearch = team.name.toLowerCase().includes(search);
+      return matchesSeason && matchesEvent && matchesSearch;
+    });
+    setFilteredTeams(filtered);
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,16 +178,11 @@ export default function TeamsPage() {
 
   const handleSeasonChange = (
     _: React.SyntheticEvent,
-    newValue: Season | null
+    newValue: Season | { _id: "all"; name: string } | null
   ) => {
     if (newValue) {
       setSelectedSeason(newValue);
-      // Reset event selection to "all" whenever season changes.
-      const resetEvent: EventType = {
-        id: "all",
-        name: "All Events",
-        seasonId: 0,
-      };
+      const resetEvent = { _id: "all", name: "All Events", seasonId: "all" };
       setSelectedEvent(resetEvent);
       filterTeams(newValue, resetEvent, searchTerm);
     }
@@ -120,7 +190,7 @@ export default function TeamsPage() {
 
   const handleEventChange = (
     _: React.SyntheticEvent,
-    newValue: EventType | null
+    newValue: EventType | { _id: "all"; name: string; seasonId: "all" } | null
   ) => {
     if (newValue) {
       setSelectedEvent(newValue);
@@ -128,32 +198,51 @@ export default function TeamsPage() {
     }
   };
 
-  const handleEdit = (teamId: number) => {
+  const handleEdit = (teamId: string) => {
     router.push(`/dashboard/teams/add?edit=${teamId}`);
   };
 
-  const handleDeleteClick = (team: { id: number; name: string }) => {
+  const handleDeleteClick = (team: Team) => {
     setSelectedTeam(team);
     setOpenDeleteDialog(true);
   };
 
-  const handleInfoClick = (team: { id: number; name: string }) => {
+  const handleInfoClick = (team: Team) => {
     console.log("Info action triggered for", team);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedTeam) {
-      console.log(`Deleting team ${selectedTeam.id}`);
-      // TODO: Add actual delete logic here
+      try {
+        await teamsService.deleteTeam(selectedTeam._id);
+        const updatedTeams = teams.filter((t) => t._id !== selectedTeam._id);
+        setTeams(updatedTeams);
+        filterTeams(selectedSeason, selectedEvent, searchTerm);
+      } catch (error) {
+        console.error(`Error deleting team ${selectedTeam._id}:`, error);
+      }
     }
     setOpenDeleteDialog(false);
     setSelectedTeam(null);
   };
 
+  // Define columns for the DataGrid.
   const columns: GridColDef[] = [
     {
       field: "name",
       headerName: "Team Name",
+      flex: 1,
+      headerClassName: "super-app-theme--header",
+    },
+    {
+      field: "seasonName",
+      headerName: "Season",
+      flex: 1,
+      headerClassName: "super-app-theme--header",
+    },
+    {
+      field: "eventName",
+      headerName: "Event",
       flex: 1,
       headerClassName: "super-app-theme--header",
     },
@@ -170,7 +259,7 @@ export default function TeamsPage() {
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
-              handleEdit(params.row.id);
+              handleEdit(params.row._id);
             }}
             color="primary"
           >
@@ -204,12 +293,9 @@ export default function TeamsPage() {
       ref={containerRef}
       sx={{ width: "100%", p: 2, maxWidth: computedMaxWidth }}
     >
-      {/* Page Heading */}
       <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
         Teams
       </Typography>
-
-      {/* Season & Event Autocomplete Dropdowns */}
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mb: 2 }}>
         <FormControl sx={{ minWidth: 150 }}>
           <Autocomplete
@@ -223,15 +309,14 @@ export default function TeamsPage() {
             renderInput={(params) => <TextField {...params} label="Season" />}
           />
         </FormControl>
-
         <FormControl sx={{ minWidth: 150 }}>
           <Autocomplete
             disablePortal
             options={eventOptions.filter(
               (ev) =>
-                selectedSeason.id === "all" ||
-                ev.seasonId === selectedSeason.id ||
-                ev.id === "all"
+                selectedSeason._id === "all" ||
+                ev.seasonId === selectedSeason._id ||
+                ev._id === "all"
             )}
             value={selectedEvent}
             onChange={handleEventChange}
@@ -242,8 +327,6 @@ export default function TeamsPage() {
           />
         </FormControl>
       </Box>
-
-      {/* Search Bar & Add Team Button */}
       <Box
         sx={{
           display: "flex",
@@ -276,25 +359,35 @@ export default function TeamsPage() {
           Add Team
         </Button>
       </Box>
-
-      {/* Data Grid */}
-      <DataGrid
-        rows={filteredTeams}
-        columns={columns}
-        sx={{
-          bgcolor: "white",
-          "& .MuiDataGrid-cell": { bgcolor: "white" },
-          "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
-          "& .super-app-theme--header": {
-            backgroundColor: "#1976d2",
-            color: "white",
-            fontWeight: 700,
-            borderBottom: "2px solid #115293",
-          },
-        }}
-      />
-
-      {/* Delete Confirmation Dialog */}
+      {loading ? (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: 200,
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      ) : (
+        <DataGrid
+          rows={filteredTeams}
+          columns={columns}
+          getRowId={(row) => row._id}
+          sx={{
+            bgcolor: "white",
+            "& .MuiDataGrid-cell": { bgcolor: "white" },
+            "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+            "& .super-app-theme--header": {
+              backgroundColor: "#1976d2",
+              color: "white",
+              fontWeight: 700,
+              borderBottom: "2px solid #115293",
+            },
+          }}
+        />
+      )}
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
