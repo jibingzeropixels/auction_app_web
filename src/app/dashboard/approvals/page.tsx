@@ -33,6 +33,7 @@ import { SelectChangeEvent } from '@mui/material/Select';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 
+// Type definitions
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -136,7 +137,7 @@ const mockTeamReps: TeamRep[] = [
   { 
     id: '6', 
     name: 'John Smith', 
-    email: 'jsmith@example.com', 
+    email: 'john@example.com', 
     role: 'teamRepresentative', 
     seasonId: '2', 
     seasonName: 'Season 2025', 
@@ -210,7 +211,6 @@ export default function ApprovalsPage(): React.ReactElement {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   
-  // Status filter state - default to showing pending only
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['pending']);
 
   useEffect(() => {
@@ -221,30 +221,33 @@ export default function ApprovalsPage(): React.ReactElement {
     
   }, [user, router]);
 
-  useEffect(() => {
-    if (selectedStatuses.includes('all')) {
-      setFilteredEventAdmins(eventAdmins);
-      setFilteredTeamReps(filterTeamRepsByEvent(teamReps));
-    } else if (selectedStatuses.length === 0) {
-      // If nothing is selected, default to pending
-      setFilteredEventAdmins(eventAdmins.filter(admin => admin.status === 'pending'));
-      setFilteredTeamReps(filterTeamRepsByEvent(teamReps.filter(rep => rep.status === 'pending')));
-    } else {
-      setFilteredEventAdmins(
-        eventAdmins.filter(admin => selectedStatuses.includes(admin.status))
-      );
-      setFilteredTeamReps(
-        filterTeamRepsByEvent(teamReps.filter(rep => selectedStatuses.includes(rep.status)))
-      );
-    }
-  }, [selectedStatuses, eventAdmins, teamReps, user]);
-
   const filterTeamRepsByEvent = (reps: TeamRep[]): TeamRep[] => {
     if (user?.role === 'eventAdmin' && user?.eventId) {
       return reps.filter(rep => rep.eventId === user.eventId);
     }
     return reps;
-  }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+
+    const filteredReps = filterTeamRepsByEvent(teamReps);
+    
+    if (selectedStatuses.includes('all')) {
+      setFilteredEventAdmins(eventAdmins);
+      setFilteredTeamReps(filteredReps);
+    } else if (selectedStatuses.length === 0) {
+      setFilteredEventAdmins(eventAdmins.filter(admin => admin.status === 'pending'));
+      setFilteredTeamReps(filteredReps.filter(rep => rep.status === 'pending'));
+    } else {
+      setFilteredEventAdmins(
+        eventAdmins.filter(admin => selectedStatuses.includes(admin.status))
+      );
+      setFilteredTeamReps(
+        filteredReps.filter(rep => selectedStatuses.includes(rep.status))
+      );
+    }
+  }, [selectedStatuses, eventAdmins, teamReps, user]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
     setTabValue(newValue);
@@ -338,7 +341,6 @@ export default function ApprovalsPage(): React.ReactElement {
       renderCell: (params) => {
         if (params.value) {
           const date = new Date(params.value.toString());
-          // Format as dd-mm-yyyy
           return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
         }
         return "";
@@ -439,6 +441,7 @@ export default function ApprovalsPage(): React.ReactElement {
       renderCell: (params) => {
         if (params.value) {
           const date = new Date(params.value.toString());
+          // Format as dd-mm-yyyy
           return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
         }
         return "";
@@ -506,9 +509,22 @@ export default function ApprovalsPage(): React.ReactElement {
         <Typography variant="h6">
           You don&apos;t have permission to access this page.
         </Typography>
+        <Button
+          variant="contained"
+          onClick={() => router.push('/dashboard')}
+          sx={{ mt: 2 }}
+        >
+          Return to Dashboard
+        </Button>
       </Box>
     );
   }
+
+  // Debug output to console
+  console.log('User Role:', user.role);
+  console.log('User Event ID:', user.eventId);
+  console.log('Team Reps:', teamReps);
+  console.log('Filtered Team Reps:', filteredTeamReps);
 
   return (
     <Box>
@@ -560,77 +576,99 @@ export default function ApprovalsPage(): React.ReactElement {
       </Paper>
       
       <Paper sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={tabValue} 
-            onChange={handleTabChange} 
-            aria-label="approval tabs"
-          >
-            <Tab 
-              label="Event Admins" 
-              id="approval-tab-0" 
-              aria-controls="approval-tabpanel-0" 
-              disabled={user.role !== 'superAdmin'}
-            />
-            <Tab 
-              label="Team Representatives" 
-              id="approval-tab-1" 
-              aria-controls="approval-tabpanel-1" 
-            />
-          </Tabs>
-        </Box>
-        
-        <TabPanel value={tabValue} index={0}>
-          {user.role === 'superAdmin' ? (
+        {user.role === 'superAdmin' ? (
+        // For Super Admins: Show both tabs
+        <>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs 
+                value={tabValue} 
+                onChange={handleTabChange} 
+                aria-label="approval tabs"
+            >
+                <Tab 
+                label="Event Admins" 
+                id="approval-tab-0" 
+                aria-controls="approval-tabpanel-0" 
+                />
+                <Tab 
+                label="Team Representatives" 
+                id="approval-tab-1" 
+                aria-controls="approval-tabpanel-1" 
+                />
+            </Tabs>
+            </Box>
+            
+            <TabPanel value={tabValue} index={0}>
             <Box sx={{ height: 400, width: '100%' }}>
-              <DataGrid
+                <DataGrid
                 rows={filteredEventAdmins}
                 columns={eventAdminColumns}
                 disableColumnMenu
                 getRowId={(row) => row.id}
                 sx={{
-                  width: '100%',
-                  bgcolor: 'white',
-                  '& .MuiDataGrid-cell': { bgcolor: 'white' },
-                  '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
-                  '& .super-app-theme--header': {
+                    width: '100%',
+                    bgcolor: 'white',
+                    '& .MuiDataGrid-cell': { bgcolor: 'white' },
+                    '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
+                    '& .super-app-theme--header': {
                     backgroundColor: '#1976d2',
                     color: 'white',
                     fontWeight: 700,
                     borderBottom: '2px solid #115293',
-                  },
+                    },
                 }}
-              />
+                />
             </Box>
-          ) : (
-            <Typography variant="body1" sx={{ p: 2 }}>
-              You don&apos;t have permission to manage event admin approvals.
-            </Typography>
-          )}
-        </TabPanel>
-        
-        <TabPanel value={tabValue} index={1}>
-          <Box sx={{ height: 400, width: '100%' }}>
+            </TabPanel>
+            
+            <TabPanel value={tabValue} index={1}>
+            <Box sx={{ height: 400, width: '100%' }}>
+                <DataGrid
+                rows={filteredTeamReps}
+                columns={teamRepColumns}
+                disableColumnMenu
+                getRowId={(row) => row.id}
+                sx={{
+                    width: '100%',
+                    bgcolor: 'white',
+                    '& .MuiDataGrid-cell': { bgcolor: 'white' },
+                    '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
+                    '& .super-app-theme--header': {
+                    backgroundColor: '#1976d2',
+                    color: 'white',
+                    fontWeight: 700,
+                    borderBottom: '2px solid #115293',
+                    },
+                }}
+                />
+            </Box>
+            </TabPanel>
+        </>
+        ) : (
+        // For Event Admins: Show only the DataGrid without any header text
+        <Box sx={{ p: 3 }}>
+            <Box sx={{ height: 400, width: '100%' }}>
             <DataGrid
-              rows={filteredTeamReps}
-              columns={teamRepColumns}
-              disableColumnMenu
-              getRowId={(row) => row.id}
-              sx={{
+                rows={filteredTeamReps}
+                columns={teamRepColumns}
+                disableColumnMenu
+                getRowId={(row) => row.id}
+                sx={{
                 width: '100%',
                 bgcolor: 'white',
                 '& .MuiDataGrid-cell': { bgcolor: 'white' },
                 '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
                 '& .super-app-theme--header': {
-                  backgroundColor: '#1976d2',
-                  color: 'white',
-                  fontWeight: 700,
-                  borderBottom: '2px solid #115293',
+                    backgroundColor: '#1976d2',
+                    color: 'white',
+                    fontWeight: 700,
+                    borderBottom: '2px solid #115293',
                 },
-              }}
+                }}
             />
-          </Box>
-        </TabPanel>
+            </Box>
+        </Box>
+        )}
       </Paper>
 
       <Dialog
