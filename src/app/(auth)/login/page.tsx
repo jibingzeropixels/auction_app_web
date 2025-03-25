@@ -106,6 +106,7 @@ export default function LoginPage() {
             onChange={handleChange}
             autoFocus
           />
+          {/* added eye-icon */}
           <TextField
             margin="normal"
             required
