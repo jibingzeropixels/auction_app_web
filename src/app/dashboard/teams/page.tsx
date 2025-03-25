@@ -28,6 +28,7 @@ import { eventsService } from "@/services/events";
 
 // Import the reusable CustomPagination component.
 import CustomPagination from "@/components/CustomPagination";
+import CustomNoRowsOverlay from "@/components/CustomNoRowsOverlay";
 
 // Data types
 type Season = {
@@ -379,6 +380,7 @@ export default function TeamsPage() {
           columns={columns}
           getRowId={(row) => row._id}
           sx={{
+            minHeight: "300px",
             bgcolor: "white",
             "& .MuiDataGrid-cell": { bgcolor: "white" },
             "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
@@ -394,7 +396,10 @@ export default function TeamsPage() {
             pagination: { paginationModel: { page: 0, pageSize: 10 } },
           }}
           // Use the custom pagination via the "slots" prop
-          slots={{ pagination: CustomPagination }}
+          slots={{
+            pagination: CustomPagination,
+            noRowsOverlay: CustomNoRowsOverlay,
+          }}
         />
       )}
       <Dialog

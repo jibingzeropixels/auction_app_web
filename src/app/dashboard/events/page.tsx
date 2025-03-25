@@ -27,8 +27,9 @@ import { seasonsService } from "@/services/seasons";
 
 // Import the reusable CustomPagination component.
 import CustomPagination from "@/components/CustomPagination";
+import CustomNoRowsOverlay from "@/components/CustomNoRowsOverlay";
 
-type Season = { id: string | number; name: string };
+type Season = { _id: string | number; name: string };
 
 type Event = {
   _id: string;
@@ -46,7 +47,7 @@ export default function EventsPage() {
   // Load seasons via API, then prepend "All Seasons"
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<Season>({
-    id: "all",
+    _id: "all",
     name: "All Seasons",
   });
 
@@ -72,8 +73,8 @@ export default function EventsPage() {
         // Load seasons and prepend "All Seasons"
         const seasonsData = await seasonsService.getAllSeasons();
         const formattedSeasons = [
-          { id: "all", name: "All Seasons" },
-          ...seasonsData.map((s: Season) => ({ id: s.id, name: s.name })),
+          { _id: "all", name: "All Seasons" },
+          ...seasonsData.map((s: Season) => ({ _id: s._id, name: s.name })),
         ];
         setSeasons(formattedSeasons);
         setSelectedSeason(formattedSeasons[0]);
@@ -96,7 +97,8 @@ export default function EventsPage() {
     setFilteredRows(
       events.filter(
         (row) =>
-          (selectedSeason.id === "all" || row.seasonId === selectedSeason.id) &&
+          (selectedSeason._id === "all" ||
+            row.seasonId === selectedSeason._id) &&
           row.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
@@ -297,6 +299,7 @@ export default function EventsPage() {
             getRowId={(row) => row._id}
             sx={{
               width: "100%",
+              minHeight: "300px",
               bgcolor: "white",
               "& .MuiDataGrid-cell": { bgcolor: "white" },
               "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
@@ -312,7 +315,10 @@ export default function EventsPage() {
               pagination: { paginationModel: { page: 0, pageSize: 10 } },
             }}
             // Use the custom pagination via the "slots" prop
-            slots={{ pagination: CustomPagination }}
+            slots={{
+              pagination: CustomPagination,
+              noRowsOverlay: CustomNoRowsOverlay,
+            }}
           />
         )}
       </Box>

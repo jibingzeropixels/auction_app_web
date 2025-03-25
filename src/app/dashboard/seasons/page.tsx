@@ -23,7 +23,7 @@ import { seasonsService } from "@/services/seasons";
 
 // Import the reusable CustomPagination component.
 import CustomPagination from "@/components/CustomPagination";
-
+import CustomNoRowsOverlay from "@/components/CustomNoRowsOverlay";
 // Define a type for a season object
 interface Season {
   _id: string;
@@ -233,6 +233,7 @@ export default function SeasonsPage() {
             sx={{
               width: "100%",
               bgcolor: "white",
+              minHeight: "300px",
               "& .MuiDataGrid-cell": { bgcolor: "white" },
               "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
               "& .super-app-theme--header": {
@@ -247,7 +248,10 @@ export default function SeasonsPage() {
               pagination: { paginationModel: { page: 0, pageSize: 10 } },
             }}
             // Use the custom pagination via the "slots" prop
-            slots={{ pagination: CustomPagination }}
+            slots={{
+              pagination: CustomPagination,
+              noRowsOverlay: CustomNoRowsOverlay,
+            }}
           />
         )}
       </Box>
