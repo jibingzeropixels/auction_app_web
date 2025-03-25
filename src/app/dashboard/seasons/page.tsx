@@ -21,6 +21,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 import { seasonsService } from "@/services/seasons";
 
+// Import the reusable CustomPagination component.
+import CustomPagination from "@/components/CustomPagination";
+
 // Define a type for a season object
 interface Season {
   _id: string;
@@ -239,6 +242,12 @@ export default function SeasonsPage() {
                 borderBottom: "2px solid #115293",
               },
             }}
+            pagination
+            initialState={{
+              pagination: { paginationModel: { page: 0, pageSize: 10 } },
+            }}
+            // Use the custom pagination via the "slots" prop
+            slots={{ pagination: CustomPagination }}
           />
         )}
       </Box>

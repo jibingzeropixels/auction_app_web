@@ -26,6 +26,9 @@ import { teamsService } from "@/services/teams";
 import { seasonsService } from "@/services/seasons";
 import { eventsService } from "@/services/events";
 
+// Import the reusable CustomPagination component.
+import CustomPagination from "@/components/CustomPagination";
+
 // Data types
 type Season = {
   _id: string;
@@ -386,6 +389,12 @@ export default function TeamsPage() {
               borderBottom: "2px solid #115293",
             },
           }}
+          pagination
+          initialState={{
+            pagination: { paginationModel: { page: 0, pageSize: 10 } },
+          }}
+          // Use the custom pagination via the "slots" prop
+          slots={{ pagination: CustomPagination }}
         />
       )}
       <Dialog

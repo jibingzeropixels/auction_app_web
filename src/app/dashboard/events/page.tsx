@@ -25,6 +25,9 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import { eventsService } from "@/services/events";
 import { seasonsService } from "@/services/seasons";
 
+// Import the reusable CustomPagination component.
+import CustomPagination from "@/components/CustomPagination";
+
 type Season = { id: string | number; name: string };
 
 type Event = {
@@ -233,10 +236,7 @@ export default function EventsPage() {
           value={selectedSeason}
           onChange={handleSeasonChange}
           getOptionLabel={(option) => option.name}
-          sx={{
-            width: 200,
-            "& .MuiInputBase-root": { height: 40 },
-          }}
+          sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
           clearIcon={null}
           renderInput={(params) => <TextField {...params} label="Season" />}
         />
@@ -307,6 +307,12 @@ export default function EventsPage() {
                 borderBottom: "2px solid #115293",
               },
             }}
+            pagination
+            initialState={{
+              pagination: { paginationModel: { page: 0, pageSize: 10 } },
+            }}
+            // Use the custom pagination via the "slots" prop
+            slots={{ pagination: CustomPagination }}
           />
         )}
       </Box>
