@@ -15,7 +15,6 @@ import { SelectChangeEvent } from "@mui/material/Select";
 
 function CustomPagination() {
   const apiRef = useGridApiContext();
-  // Ensure default pageSize is defined
   const page = useGridSelector(apiRef, gridPageSelector);
   const pageSize = useGridSelector(apiRef, gridPageSizeSelector) || 10;
   const rowCount = useGridSelector(apiRef, gridRowCountSelector) || 0;
@@ -25,10 +24,7 @@ function CustomPagination() {
     apiRef.current.setPage(newPage);
   };
 
-  const handlePageSizeChange = (
-    event: SelectChangeEvent<number>,
-    child: React.ReactNode
-  ) => {
+  const handlePageSizeChange = (event: SelectChangeEvent<number>) => {
     apiRef.current.setPageSize(Number(event.target.value));
   };
 
