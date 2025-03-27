@@ -91,9 +91,10 @@ export default function EventsPage() {
         // Load events from API
         const eventsData: Event[] = await eventsService.getAllEvents();
         // Assign a dummy status of "onboarding" to each event
+        const ONBOARDING_STATUS = "onboarding" as const;
         const eventsWithStatus = eventsData.map((event) => ({
           ...event,
-          status: "onboarding" as "onboarding",
+          status: ONBOARDING_STATUS,
         }));
         setEvents(eventsWithStatus);
         setFilteredRows(eventsWithStatus);
