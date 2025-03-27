@@ -38,18 +38,19 @@ const navigationItems = {
     { name: 'Seasons', icon: <CalendarViewMonthIcon />, path: '/dashboard/seasons' },
     { name: 'Events', icon: <EventIcon />, path: '/dashboard/events' },
     { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
+    { name: 'Players', icon: <PersonIcon />, path: '/dashboard/players' },
     { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
   ],
   eventAdmin: [
     { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { name: 'My Event', icon: <EventIcon />, path: '/dashboard/my-event' },
+    { name: 'Events', icon: <EventIcon />, path: '/dashboard/events' },
     { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
     { name: 'Players', icon: <PersonIcon />, path: '/dashboard/players' },
     { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
   ],
   teamRepresentative: [
     { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { name: 'My Team', icon: <GroupsIcon />, path: '/dashboard/my-team' },
+    { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
     { name: 'Auction', icon: <EventIcon />, path: '/dashboard/auction' },
   ]
 };
