@@ -265,7 +265,7 @@ export default function EventsPage() {
             {row.status === "onboarding" && (
               <Button
                 variant="contained"
-                color="primary"
+                color="secondary"
                 size="small"
                 sx={{ ml: 1 }}
                 onClick={(e) => {
@@ -279,7 +279,7 @@ export default function EventsPage() {
             {row.status === "declared" && (
               <Button
                 variant="contained"
-                color="primary"
+                color="success"
                 size="small"
                 sx={{ ml: 1 }}
                 onClick={(e) => {
@@ -427,6 +427,11 @@ export default function EventsPage() {
       >
         <DialogTitle>Declare Event</DialogTitle>
         <DialogContent>
+          {selectedEventForDeclare && (
+            <Typography variant="subtitle1" sx={{ mb: 2 }}>
+              Event: {selectedEventForDeclare.name}
+            </Typography>
+          )}
           <Typography sx={{ mb: 2 }}>
             Enter the Total Amount and Base Price:
           </Typography>
