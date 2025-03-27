@@ -34,36 +34,25 @@ const drawerWidth = 240;
 // Define navigation items by role
 const navigationItems = {
   superAdmin: [
-    { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-    {
-      name: "Seasons",
-      icon: <CalendarViewMonthIcon />,
-      path: "/dashboard/seasons",
-    },
-    { name: "Events", icon: <EventIcon />, path: "/dashboard/events" },
-    { name: "Teams", icon: <GroupsIcon />, path: "/dashboard/teams" },
-    {
-      name: "Approvals",
-      icon: <AssignmentTurnedInIcon />,
-      path: "/dashboard/approvals",
-    },
+    { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { name: 'Seasons', icon: <CalendarViewMonthIcon />, path: '/dashboard/seasons' },
+    { name: 'Events', icon: <EventIcon />, path: '/dashboard/events' },
+    { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
+    { name: 'Players', icon: <PersonIcon />, path: '/dashboard/players' },
+    { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
   ],
   eventAdmin: [
-    { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-    { name: "My Event", icon: <EventIcon />, path: "/dashboard/my-event" },
-    { name: "Teams", icon: <GroupsIcon />, path: "/dashboard/teams" },
-    { name: "Players", icon: <PersonIcon />, path: "/dashboard/players" },
-    {
-      name: "Approvals",
-      icon: <AssignmentTurnedInIcon />,
-      path: "/dashboard/approvals",
-    },
+    { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { name: 'Events', icon: <EventIcon />, path: '/dashboard/events' },
+    { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
+    { name: 'Players', icon: <PersonIcon />, path: '/dashboard/players' },
+    { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
   ],
   teamRepresentative: [
-    { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-    { name: "My Team", icon: <GroupsIcon />, path: "/dashboard/my-team" },
-    { name: "Auction", icon: <EventIcon />, path: "/dashboard/auction" },
-  ],
+    { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
+    { name: 'Auction', icon: <EventIcon />, path: '/dashboard/auction' },
+  ]
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
