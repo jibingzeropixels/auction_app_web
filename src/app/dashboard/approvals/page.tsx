@@ -34,6 +34,7 @@ import { SelectChangeEvent } from "@mui/material/Select";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
 import { approvalsService } from "@/services/approvals";
+import { useCallback } from "react";
 
 import CustomPagination from "@/components/CustomPagination";
 import CustomNoRowsOverlay from "@/components/CustomNoRowsOverlay";
@@ -145,6 +146,16 @@ export default function ApprovalsPage(): React.ReactElement {
     "pending",
   ]);
 
+  const filterTeamRepsByEvent = useCallback(
+    (reps: TeamRep[]): TeamRep[] => {
+      if (user?.role === "eventAdmin" && user?.eventId) {
+        return reps.filter((rep) => rep.eventId === user.eventId);
+      }
+      return reps;
+    },
+    [user?.role, user?.eventId]
+  );
+
   useEffect(() => {
     if (user && user.role !== "superAdmin" && user.role !== "eventAdmin") {
       router.push("/dashboard");
@@ -180,15 +191,7 @@ export default function ApprovalsPage(): React.ReactElement {
     if (user) {
       fetchApprovals();
     }
-  }, [user, router]);
-
-  const filterTeamRepsByEvent = (reps: TeamRep[]): TeamRep[] => {
-    if (user?.role === "eventAdmin" && user?.eventId) {
-      return reps.filter((rep) => rep.eventId === user.eventId);
-    }
-    return reps;
-  };
-
+  }, [user, router, filterTeamRepsByEvent]);
   useEffect(() => {
     if (!user) return;
 
@@ -212,7 +215,7 @@ export default function ApprovalsPage(): React.ReactElement {
         filteredReps.filter((rep) => selectedStatuses.includes(rep.status))
       );
     }
-  }, [selectedStatuses, eventAdmins, teamReps, user]);
+  }, [selectedStatuses, eventAdmins, teamReps, user, filterTeamRepsByEvent]);
 
   const handleTabChange = (
     _event: React.SyntheticEvent,
