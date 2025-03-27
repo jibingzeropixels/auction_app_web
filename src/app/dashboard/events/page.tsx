@@ -38,6 +38,8 @@ type Event = {
   startDate: string;
   endDate: string;
   seasonId: string;
+  // Add a dummy status field on the frontend only.
+  status?: "onboarding" | "declared";
 };
 
 export default function EventsPage() {
@@ -55,6 +57,13 @@ export default function EventsPage() {
   const [filteredRows, setFilteredRows] = useState<Event[]>([]);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  // Declare Dialog state
+  const [declareDialogOpen, setDeclareDialogOpen] = useState(false);
+  const [selectedEventForDeclare, setSelectedEventForDeclare] =
+    useState<Event | null>(null);
+  const [totalAmt, setTotalAmt] = useState("");
+  const [basePrice, setBasePrice] = useState("");
 
   const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
   const [loading, setLoading] = useState(true);
@@ -81,8 +90,14 @@ export default function EventsPage() {
 
         // Load events from API
         const eventsData: Event[] = await eventsService.getAllEvents();
-        setEvents(eventsData);
-        setFilteredRows(eventsData);
+        // Assign a dummy status of "onboarding" to each event
+        const ONBOARDING_STATUS = "onboarding" as const;
+        const eventsWithStatus = eventsData.map((event) => ({
+          ...event,
+          status: ONBOARDING_STATUS,
+        }));
+        setEvents(eventsWithStatus);
+        setFilteredRows(eventsWithStatus);
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -121,7 +136,6 @@ export default function EventsPage() {
   // When editing an event, pass full event details as query parameters.
   const handleEdit = (row: Event) => {
     const { _id, name, desc, startDate, endDate, seasonId } = row;
-    // Format dates to YYYY-MM-DD (if in ISO string format).
     const formattedStartDate = startDate.split("T")[0];
     const formattedEndDate = endDate.split("T")[0];
     router.push(
@@ -151,6 +165,35 @@ export default function EventsPage() {
     }
     setOpenDeleteDialog(false);
     setSelectedEvent(null);
+  };
+
+  // Open the Declare dialog (for events with dummy status "onboarding")
+  const openDeclareDialog = (row: Event) => {
+    setSelectedEventForDeclare(row);
+    setDeclareDialogOpen(true);
+  };
+
+  // When declaring an event, update the dummy status to "declared"
+  const handleDeclareSubmit = async () => {
+    if (selectedEventForDeclare) {
+      // In a real implementation, you'd call an API here.
+      setEvents((prev) =>
+        prev.map((e) =>
+          e._id === selectedEventForDeclare._id
+            ? { ...e, status: "declared" }
+            : e
+        )
+      );
+      setDeclareDialogOpen(false);
+      setSelectedEventForDeclare(null);
+      setTotalAmt("");
+      setBasePrice("");
+    }
+  };
+
+  // Handle Start button click – navigates to new page passing event id in params.
+  const handleStartClick = (row: Event) => {
+    router.push(`/dashboard/events/start?eventId=${row._id}`);
   };
 
   const columns: GridColDef[] = [
@@ -184,39 +227,72 @@ export default function EventsPage() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 180,
+      width: 250,
       headerClassName: "super-app-theme--header",
-      renderCell: (params) => (
-        <Box>
-          <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
-              handleEdit(params.row);
-            }}
-            color="primary"
-          >
-            <EditIcon />
-          </IconButton>
-          <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
-              handleDeleteClick(params.row);
-            }}
-            color="error"
-          >
-            <DeleteIcon />
-          </IconButton>
-          <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
-              console.log("Info action triggered for", params.row);
-            }}
-            color="info"
-          >
-            <VisibilityIcon />
-          </IconButton>
-        </Box>
-      ),
+      renderCell: (params) => {
+        const row = params.row as Event;
+        return (
+          <Box>
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation();
+                handleEdit(row);
+              }}
+              color="primary"
+            >
+              <EditIcon />
+            </IconButton>
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation();
+                handleDeleteClick(row);
+              }}
+              color="error"
+            >
+              <DeleteIcon />
+            </IconButton>
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation();
+                console.log("Info action triggered for", row);
+              }}
+              color="info"
+            >
+              <VisibilityIcon />
+            </IconButton>
+
+            {/* Dummy conditional button based on event status */}
+            {row.status === "onboarding" && (
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                sx={{ ml: 1 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDeclareDialog(row);
+                }}
+              >
+                Declare
+              </Button>
+            )}
+            {row.status === "declared" && (
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                sx={{ ml: 1 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStartClick(row);
+                }}
+              >
+                Start
+              </Button>
+            )}
+          </Box>
+        );
+      },
     },
   ];
 
@@ -314,7 +390,6 @@ export default function EventsPage() {
             initialState={{
               pagination: { paginationModel: { page: 0, pageSize: 10 } },
             }}
-            // Use the custom pagination via the "slots" prop
             slots={{
               pagination: CustomPagination,
               noRowsOverlay: CustomNoRowsOverlay,
@@ -341,6 +416,43 @@ export default function EventsPage() {
           </Button>
           <Button onClick={confirmDelete} color="error">
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Declare Dialog */}
+      <Dialog
+        open={declareDialogOpen}
+        onClose={() => setDeclareDialogOpen(false)}
+      >
+        <DialogTitle>Declare Event</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Enter the Total Amount and Base Price:
+          </Typography>
+          <TextField
+            fullWidth
+            label="Total Amount"
+            variant="outlined"
+            margin="dense"
+            value={totalAmt}
+            onChange={(e) => setTotalAmt(e.target.value)}
+          />
+          <TextField
+            fullWidth
+            label="Base Price"
+            variant="outlined"
+            margin="dense"
+            value={basePrice}
+            onChange={(e) => setBasePrice(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeclareDialogOpen(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeclareSubmit} color="secondary">
+            Submit
           </Button>
         </DialogActions>
       </Dialog>
