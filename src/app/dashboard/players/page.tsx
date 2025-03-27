@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import {
   Button,
@@ -27,6 +28,7 @@ import { seasonsService } from "@/services/seasons";
 import { eventsService } from "@/services/events";
 import { teamsService } from "@/services/teams";
 
+// Define data types
 type Season = {
   _id: string;
   name: string;
@@ -44,7 +46,6 @@ type TeamType = {
   eventId: string;
 };
 
-// do API call later
 type Player = {
   _id: string;
   name: string;
@@ -54,10 +55,13 @@ type Player = {
   status: "available" | "sold" | "unsold";
   eventId: string;
   createdAt: string;
+  seasonName: string;
+  eventName: string;
 };
 
 export default function PlayersPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -99,7 +103,6 @@ export default function PlayersPage() {
       try {
         setLoading(true);
         
-        // Fetch from API later
         const [fetchedSeasons, fetchedEvents, fetchedTeams] = await Promise.all([
           seasonsService.getAllSeasons(),
           eventsService.getAllEvents(),
@@ -110,7 +113,6 @@ export default function PlayersPage() {
         setEvents(fetchedEvents);
         setTeams(fetchedTeams);
         
-        // Mock players data
         const mockPlayers: Player[] = [
           {
             _id: "1",
@@ -120,7 +122,9 @@ export default function PlayersPage() {
             category: "Batsman",
             status: "sold",
             eventId: fetchedEvents[0]?._id || "",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            seasonName: fetchedSeasons.find((s: Season) => s._id === fetchedEvents[0]?.seasonId)?.name || "Unknown",
+            eventName: fetchedEvents[0]?.name || "Unknown"
           },
           {
             _id: "2",
@@ -130,7 +134,9 @@ export default function PlayersPage() {
             category: "Batsman",
             status: "sold",
             eventId: fetchedEvents[0]?._id || "",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            seasonName: fetchedSeasons.find(s => s._id === fetchedEvents[0]?.seasonId)?.name || "Unknown",
+            eventName: fetchedEvents[0]?.name || "Unknown"
           },
           {
             _id: "3",
@@ -140,7 +146,9 @@ export default function PlayersPage() {
             category: "Bowler",
             status: "available",
             eventId: fetchedEvents[0]?._id || "",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            seasonName: fetchedSeasons.find(s => s._id === fetchedEvents[0]?.seasonId)?.name || "Unknown",
+            eventName: fetchedEvents[0]?.name || "Unknown"
           },
           {
             _id: "4",
@@ -150,7 +158,9 @@ export default function PlayersPage() {
             category: "Wicket Keeper",
             status: "available",
             eventId: fetchedEvents[1]?._id || "",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            seasonName: fetchedSeasons.find(s => s._id === fetchedEvents[1]?.seasonId)?.name || "Unknown",
+            eventName: fetchedEvents[1]?.name || "Unknown"
           },
           {
             _id: "5",
@@ -160,7 +170,9 @@ export default function PlayersPage() {
             category: "All-rounder",
             status: "unsold",
             eventId: fetchedEvents[1]?._id || "",
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            seasonName: fetchedSeasons.find(s => s._id === fetchedEvents[1]?.seasonId)?.name || "Unknown",
+            eventName: fetchedEvents[1]?.name || "Unknown"
           }
         ];
         
@@ -177,9 +189,9 @@ export default function PlayersPage() {
   }, []);
 
   useEffect(() => {
-    const filtered = players.filter(player => {
-      const playerEvent = events.find(e => e._id === player.eventId);
-      const playerTeam = teams.find(t => t._id === player.teamId);
+    const filtered = players.filter((player: Player) => {
+      const playerEvent = events.find((e: EventType) => e._id === player.eventId);
+      const playerTeam = teams.find((t: TeamType) => t._id === player.teamId);
       
       const eventBelongsToSeason = 
         selectedSeason._id === "all" || 
@@ -283,10 +295,19 @@ export default function PlayersPage() {
       minWidth: 180,
       headerClassName: "super-app-theme--header",
     },
+    // Only show season column for superAdmin
+    ...(user?.role === 'superAdmin' ? [
+      {
+        field: "seasonName",
+        headerName: "Season",
+        width: 150,
+        headerClassName: "super-app-theme--header",
+      }
+    ] : []),
     {
-      field: "category",
-      headerName: "Category",
-      width: 130,
+      field: "eventName",
+      headerName: "Event",
+      width: 150,
       headerClassName: "super-app-theme--header",
     },
     {
@@ -295,7 +316,7 @@ export default function PlayersPage() {
       width: 130,
       headerClassName: "super-app-theme--header",
       renderCell: (params) => (
-        <span>${params.value.toLocaleString()}</span>
+        <span>${params.value ? params.value.toLocaleString() : "Not set"}</span>
       ),
     },
     {
