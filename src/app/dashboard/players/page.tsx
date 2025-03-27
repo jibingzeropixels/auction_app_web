@@ -44,7 +44,7 @@ type TeamType = {
   eventId: string;
 };
 
-// do API call
+// do API call later
 type Player = {
   _id: string;
   name: string;
@@ -99,7 +99,7 @@ export default function PlayersPage() {
       try {
         setLoading(true);
         
-        // Fetch data from API later
+        // Fetch from API later
         const [fetchedSeasons, fetchedEvents, fetchedTeams] = await Promise.all([
           seasonsService.getAllSeasons(),
           eventsService.getAllEvents(),
@@ -487,6 +487,21 @@ export default function PlayersPage() {
           columns={columns}
           disableColumnMenu
           getRowId={(row) => row._id}
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{
+            pagination: {
+              paginationModel: { pageSize: 10, page: 0 },
+            },
+          }}
+          localeText={{
+            MuiTablePagination: {
+              labelDisplayedRows: ({ from, to, count }) => {
+                const currentPage = Math.ceil(from / 10);
+                const totalPages = Math.max(1, Math.ceil(count / 10));
+                return `Page ${currentPage} of ${totalPages}`;
+              }
+            }
+          }}
           sx={{
             width: "100%",
             bgcolor: "white",
