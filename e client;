@@ -1,0 +1,512 @@
+[33mcommit c3636c3b0d4851bcb8bf522a920c6dd8f0fe1d8a[m[33m ([m[1;36mHEAD -> [m[1;32mfeature/declare-button[m[33m, [m[1;31morigin/feature/declare-button[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 17:32:40 2025 +0530
+
+    lint more
+
+[33mcommit cf74e961e37850ebc6c4132a4a999359829583c7[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 17:19:40 2025 +0530
+
+    lint issues
+
+[33mcommit 593bc284baac5f5f6b4b99e0a86cc6c527a1cfec[m
+Merge: 96ba2d7 212e7cc
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 17:12:05 2025 +0530
+
+    Merge branch 'main' of https://github.com/jibingzeropixels/auction_app_web into feature/declare-button
+
+[33mcommit 96ba2d72fac56afd466670334917b29d0b7ced9f[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 17:02:31 2025 +0530
+
+    lint issue fixed
+
+[33mcommit 212e7ccf0cc8da67725b33a80e33e4edf9b455be[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: 9ba84f3 d2b25fb
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 16:44:43 2025 +0530
+
+    Merge pull request #34 from jibingzeropixels/feature/players-page-ui
+    
+    Feature/players page UI
+
+[33mcommit d2b25fb62d365ee25e3e7559bffe6d24290b8b4d[m
+Merge: 4cf3426 9ba84f3
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 16:44:27 2025 +0530
+
+    Merge branch 'main' into feature/players-page-ui
+
+[33mcommit 9ba84f3b306196e03b5741b3824f61e272b0befb[m
+Merge: 07eda1d f28369d
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 16:42:47 2025 +0530
+
+    Merge pull request #31 from jibingzeropixels/feature/approvals-table-footer
+    
+    changed footer and empty state
+
+[33mcommit 07eda1d2f1bdcca31a73f912caa20ed55f66056e[m
+Merge: e03dd47 628a462
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 15:16:58 2025 +0530
+
+    Merge pull request #32 from jibingzeropixels/feature/add-players-page
+    
+    Feature/add players page
+
+[33mcommit 4cf3426f9b6567922860ed367118da4f2655d037[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 15:13:04 2025 +0530
+
+    Dashboard layout path and name fixes
+
+[33mcommit 31040fb2ebee81f06baa74a8091f32bf37b0d655[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 15:11:21 2025 +0530
+
+    Update players table - event and season name
+
+[33mcommit 7b41cf1157a4e1b02b53ff5c4b610a96e297861c[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 13:55:15 2025 +0530
+
+    added button to declare with dialog
+
+[33mcommit 628a462c66e5dd0588606c888ee7558264bc55ab[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 13:25:43 2025 +0530
+
+    Change add players form field
+
+[33mcommit 06df0cb3099189c7e68d0688748da767cdccbbf5[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 12:44:24 2025 +0530
+
+    Add players page
+
+[33mcommit f28369d592ad6aa2acc43cbb3efed0ecdc004f71[m[33m ([m[1;31morigin/feature/approvals-table-footer[m[33m, [m[1;32mfeature/approvals-table-footer[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 11:10:55 2025 +0530
+
+    changed footer and empty state
+
+[33mcommit e03dd47dc03ac4e003ce0691dd900717f719468c[m
+Merge: 7382a28 4cf2245
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 10:10:43 2025 +0530
+
+    Merge pull request #30 from jibingzeropixels/feature/players-page-ui
+    
+    Update players page ui
+
+[33mcommit 7382a280a596e25e7b1fd7ac54535870adb2aac9[m[33m ([m[1;32mmain[m[33m)[m
+Merge: 141cd03 87beba8
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 09:51:38 2025 +0530
+
+    Merge pull request #29 from jibingzeropixels/feature/approvals-api-integration
+    
+    Feature/approvals api integration
+
+[33mcommit 141cd03ced1a2a035dd2a19fba782cfdee656bad[m
+Merge: ee1e4e3 197cfec
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 27 09:51:22 2025 +0530
+
+    Merge pull request #27 from jibingzeropixels/feature/pagination-ui
+    
+    custom pagination footer
+
+[33mcommit 4cf2245d5096ff74a5a87bf5815464d6fd9e123c[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 09:27:39 2025 +0530
+
+    Fix table issues
+
+[33mcommit 4094cb6192200292db4d1cacfae9f446d5f7bc9a[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Thu Mar 27 09:12:00 2025 +0530
+
+    Update players page ui
+
+[33mcommit 87beba86c033d2fd34329d2a4e604baf591db1a9[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Wed Mar 26 18:27:04 2025 +0530
+
+    Integrate api and replace mock data
+
+[33mcommit 38d9c941c11c22edde37938db6a54d27d7644d34[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Wed Mar 26 18:22:16 2025 +0530
+
+    Add approvals service
+
+[33mcommit ee1e4e3238599f96ede0f826c8ecd4cbb4723f95[m
+Merge: cdac5f8 afbfe3c
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Wed Mar 26 11:13:34 2025 +0530
+
+    Merge pull request #28 from jibingzeropixels/feature/login-pswd-eye-icon
+    
+    Feature/login pswd eye icon
+
+[33mcommit afbfe3cab28e7fd56e57c3e4d72fad3f0c3bfb1e[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Tue Mar 25 16:15:25 2025 +0530
+
+    Add login password eye button
+
+[33mcommit 1b924d043d8a12f5a489ba1f9c1e5da17da4a9c7[m
+Author: Roshin Rajesh <roshinr@zero-pixels.com>
+Date:   Tue Mar 25 16:11:15 2025 +0530
+
+    Add login password eye button
+
+[33mcommit 197cfec528e4703da434efccdf579f73de33db6d[m[33m ([m[1;31morigin/feature/pagination-ui[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Tue Mar 25 16:09:38 2025 +0530
+
+    added empty stack
+
+[33mcommit 7be8e04fe2d1893cf23e9a6460e78ef3f23d62f4[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Tue Mar 25 11:04:36 2025 +0530
+
+    lint fix
+
+[33mcommit 0c81d29594f810fe764a1a5d5724f0a537d7e47b[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Tue Mar 25 10:49:49 2025 +0530
+
+    custom pagination footer
+
+[33mcommit cdac5f89f8dc795722fd4f7d5660f28649fbb1da[m
+Merge: b90eaac dcf3496
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Mon Mar 24 17:50:53 2025 +0530
+
+    Merge pull request #26 from jibingzeropixels/feature/approvals-table-filter
+    
+    Feature/approvals table filter
+
+[33mcommit dcf34960f6aedc6417a90ce18ed10e9dee26d94a[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Mon Mar 24 17:35:29 2025 +0530
+
+    Fix event-admin approvals page
+
+[33mcommit 5782bd749c52d6eafa820beab0e1cf79084ef438[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Mon Mar 24 17:07:53 2025 +0530
+
+    Add filter --All and made --pending as default filter
+
+[33mcommit b90eaac20fc7ddf720b9bda7c1681e4180b14447[m
+Merge: b52e369 631343a
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Mon Mar 24 16:05:54 2025 +0530
+
+    Merge pull request #25 from jibingzeropixels/feature/add-team-api
+    
+    team api integration
+
+[33mcommit 7e42c512b90a608cbc8a1928d41761a61ad234a3[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Mon Mar 24 15:53:41 2025 +0530
+
+    Change approval page table to match app design
+
+[33mcommit 75cccf55fff17587e4d393a6868a801ca698ef70[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Mon Mar 24 15:29:46 2025 +0530
+
+    Add filters to approval page
+
+[33mcommit 631343ade5308500ba8181e8f3bc87dc153ce665[m[33m ([m[1;31morigin/feature/add-team-api[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Mon Mar 24 15:28:35 2025 +0530
+
+    team api integration
+
+[33mcommit 84bbab2623cb0b07f0388792ec8112fc5f4c3ee5[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Mon Mar 24 12:44:12 2025 +0530
+
+    Change app title name
+
+[33mcommit b52e369584303525cd61bfee81ef4f796b16ad29[m
+Merge: fbee433 f7b9cb2
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Fri Mar 21 15:59:55 2025 +0530
+
+    Merge pull request #24 from jibingzeropixels/feature/lint-issue-fixes
+    
+    Fix lint issues
+
+[33mcommit f7b9cb2a6217a8f71c0b99e2ec08cc14251eec80[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 15:58:25 2025 +0530
+
+    Fix lint issues
+
+[33mcommit fbee433bae38dab1442712314fbcec179eab5ab1[m
+Merge: c49e93d 4206815
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Fri Mar 21 15:41:55 2025 +0530
+
+    Merge pull request #22 from jibingzeropixels/bug/lint
+    
+    lint issues removed
+
+[33mcommit 42068150483b460106f7e92976239a2c7c0a808a[m
+Merge: b7999a8 c49e93d
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Fri Mar 21 15:41:41 2025 +0530
+
+    Merge branch 'main' into bug/lint
+
+[33mcommit c49e93d470a2898653246041b961bac3a0c78b9b[m
+Merge: fa8d3b6 f5262e1
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Fri Mar 21 15:32:55 2025 +0530
+
+    Merge pull request #23 from jibingzeropixels/feature/add-teams-page
+    
+    Add add team page for super admins and event admins
+
+[33mcommit f5262e1e1cb5116959dc070c74af5cfe0b7564c1[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 15:23:42 2025 +0530
+
+    Add add team page for super admins and event admins
+
+[33mcommit b7999a873c649e9312ad6bef2fde4e4b578701f2[m[33m ([m[1;31morigin/bug/lint[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Fri Mar 21 15:13:28 2025 +0530
+
+    lint issues removed
+
+[33mcommit fa8d3b6dac1751fb8eb7aa60e41ed541455c1dde[m
+Merge: 9005b01 63e7d07
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Fri Mar 21 14:59:58 2025 +0530
+
+    Merge pull request #21 from jibingzeropixels/feature/dashboard-fixes
+    
+    Add approvals for event admins aswell
+
+[33mcommit 63e7d07806391a7dc5e32052a772d4665053d9bc[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 14:53:31 2025 +0530
+
+    Add approvals for event admins aswell
+
+[33mcommit 9005b0142d75c6238f35adcf49b4824a80e80feb[m
+Merge: 839f96d d6e6899
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Fri Mar 21 14:15:45 2025 +0530
+
+    Merge pull request #20 from jibingzeropixels/feature/add-event-api
+    
+    api for events
+
+[33mcommit d6e6899c925868e46912d697c46c0b64e21c8983[m[33m ([m[1;31morigin/feature/add-event-api[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Fri Mar 21 14:09:21 2025 +0530
+
+    api for events
+
+[33mcommit 839f96d9258d9d687ded8c1b2f858bf521bd0a65[m
+Merge: 19cee41 5230fca
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Fri Mar 21 14:06:50 2025 +0530
+
+    Merge pull request #19 from jibingzeropixels/feature/auth-context-fix
+    
+    Feature/auth context fix
+
+[33mcommit 5230fcad7933f8d4c791884c27418266905d4f37[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 12:58:19 2025 +0530
+
+    Change default route paths after login
+
+[33mcommit cab7a503b92fc3f76f42b8a313c000940ea15745[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 12:25:11 2025 +0530
+
+    Added null user fallback
+
+[33mcommit 0ef6521a85f5834fe64364f945468ea077fbc4cd[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 12:21:20 2025 +0530
+
+    Add interface changes
+
+[33mcommit 6a832a8ac177345136b1ca6f9c6852f84aba748f[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 11:36:26 2025 +0530
+
+    Add changes to token interface
+
+[33mcommit c28ffee6f0896c07270c35d847c5e0d4fe00459e[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 07:53:53 2025 +0530
+
+    Update role-based access display content
+
+[33mcommit e4c66e322e8c56fc89fbd4303609a937985e8d7e[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 07:48:54 2025 +0530
+
+    Update role-based access
+
+[33mcommit d64e8492a83f29fc25e46425f11bdc914d230b9b[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Fri Mar 21 07:48:14 2025 +0530
+
+    Update auth context
+
+[33mcommit aec931e83cb663aefbeef37a097b361ef886d63f[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Thu Mar 20 15:18:42 2025 +0530
+
+    Make role based access fix
+
+[33mcommit 19cee41c60e09b2e9667e906a70f163807ca1bf0[m
+Merge: 35a63a1 0bdde8b
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Thu Mar 20 12:05:17 2025 +0530
+
+    Merge pull request #18 from jibingzeropixels/feature/api-integration-login
+    
+    Feature/api integration login
+
+[33mcommit 0bdde8bf1132c5ea340b0d6c5e09dc3c63daa0e9[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Thu Mar 20 12:01:38 2025 +0530
+
+    Role based access code change
+
+[33mcommit 530204d3a08d152f328b7e8c300ef2acdf9e85e3[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Thu Mar 20 10:46:13 2025 +0530
+
+    Login page change
+
+[33mcommit 35a63a1fa6341a6ad5855a16df0e3ece30e15ecf[m
+Merge: 0f89a96 e85623a
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Thu Mar 20 09:52:00 2025 +0530
+
+    Merge pull request #17 from jibingzeropixels/feature/api-add-season
+    
+    api for seasons
+
+[33mcommit e85623aa10295c7fc7aa3e8ea1ff5f65d0df56e3[m[33m ([m[1;31morigin/feature/api-add-season[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Wed Mar 19 17:46:47 2025 +0530
+
+    api for seasons
+
+[33mcommit d20fa5929ea43ff3b6370e351d72ecaebbb675fa[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Wed Mar 19 17:31:41 2025 +0530
+
+    Add jwt-decode package
+
+[33mcommit f12814bbbea8d5109f5b85434918bd8775d24563[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Wed Mar 19 17:31:00 2025 +0530
+
+    Add login service
+
+[33mcommit 59bd43165e6b7bfc3a02d72d91c5466f59ec1c97[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Wed Mar 19 11:52:19 2025 +0530
+
+    Add login services
+
+[33mcommit 0f89a960f7ee0ee20b4f4dc5852342d9ad8ad401[m
+Merge: 4d3f1e0 5e6e7c9
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Wed Mar 19 09:41:16 2025 +0530
+
+    Merge pull request #15 from jibingzeropixels/feature/search-dropdown
+    
+    replaced dropdown with searchdropdown and eye icon added
+
+[33mcommit 4d3f1e0cf169cbc9a355a6ee5021803e9b255bd0[m
+Merge: ef98bf5 e31a3ca
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Tue Mar 18 17:41:40 2025 +0530
+
+    Merge pull request #16 from jibingzeropixels/feature/api-integration-registration
+    
+    Feature/api integration registration
+
+[33mcommit e31a3ca8bb0d78b0b92700b20bb4c5361a3c3211[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Tue Mar 18 17:38:28 2025 +0530
+
+    Implement api integration for user registration
+
+[33mcommit 9697f553f74261716dc846738b8f1a855039e163[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Tue Mar 18 17:36:38 2025 +0530
+
+    Add registration auth services
+
+[33mcommit 5e6e7c9f349ef4b79990d9c45982a86ad7a354f4[m[33m ([m[1;31morigin/feature/search-dropdown[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Tue Mar 18 17:13:29 2025 +0530
+
+    replaced dropdown with searchdropdown and eye icon added
+
+[33mcommit ef98bf555fa8b9190298d333d5ed4f464cc66408[m
+Merge: 1a3229d 8d977ef
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Tue Mar 18 14:49:33 2025 +0530
+
+    Merge pull request #14 from jibingzeropixels/feature/grids
+    
+    changed grid style and added selection of active tab
+
+[33mcommit 1a3229d1259c5fa27aaaf7365c3ca0e6e712a0f4[m
+Merge: 6c8a249 e9a2da5
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Tue Mar 18 11:13:10 2025 +0530
+
+    Merge pull request #13 from jibingzeropixels/feature/add-events-page
+    
+    Add add-events-page to add new events for both super admins and event admins
+
+[33mcommit 6c8a249cbfff890df3ad31d241c0a374e6bc90e9[m
+Merge: df25642 0a59772
+Author: roshin <roshinr@zero-pixels.com>
+Date:   Tue Mar 18 11:12:48 2025 +0530
+
+    Merge pull request #12 from jibingzeropixels/feature/Add-season-page
+    
+    Add changes to the Add season page interface
+
+[33mcommit 8d977ef5ebc56136ed23582ed553ae3fbc3cfe19[m[33m ([m[1;31morigin/feature/grids[m[33m)[m
+Author: ryan-zp <ryant@zero-pixels.com>
+Date:   Tue Mar 18 10:12:04 2025 +0530
+
+    changed grid style and added selection of active tab
+
+[33mcommit e9a2da5a1229c94cb4a23161ef3795b0d796536a[m[33m ([m[1;31morigin/feature/add-events-page[m[33m)[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Tue Mar 18 09:58:10 2025 +0530
+
+    Remove dashboard breadcrumb from add-event-page
+
+[33mcommit b901ac5629bfa251fe4cb28a765990c110e7875e[m
+Author: Roshin Rajesh <roshinrajesh@Roshins-MacBook-Air.local>
+Date:   Tue Mar 18 09:57:11 2025 +0530
+
+    Add add-event-page under events tab
