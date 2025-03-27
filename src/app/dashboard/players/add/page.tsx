@@ -24,7 +24,8 @@ import {
   Radio,
   FormLabel,
   Avatar,
-  IconButton
+  IconButton,
+  Checkbox
 } from "@mui/material";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -32,16 +33,17 @@ import { seasonsService } from "@/services/seasons";
 import { eventsService } from "@/services/events";
 import { teamsService } from "@/services/teams";
 
-// skill levels
 type SkillLevel = "Beginner" | "Intermediate" | "Expert" | "Pro";
 
 interface FormData {
-  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   seasonId: string;
   eventId: string;
-  teamId: string;
   skillLevel: SkillLevel;
   remarks: string;
+  isMVP: boolean;
   photo: File | null;
 }
 
@@ -84,12 +86,14 @@ export default function AddPlayerPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
-    name: "",
+    firstName: "",
+    lastName: "",
+    email: "",
     seasonId: "",
     eventId: "",
-    teamId: "",
     skillLevel: "Beginner",
     remarks: "",
+    isMVP: false,
     photo: null
   });
 
@@ -111,13 +115,19 @@ export default function AddPlayerPage() {
 
   useEffect(() => {
     if (editPlayerId) {
+      const nameParts = prepopulatedName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       setFormData({
-        name: prepopulatedName,
+        firstName,
+        lastName,
+        email: searchParams.get("email") || "",
         seasonId: prepopulatedSeasonId,
         eventId: prepopulatedEventId,
-        teamId: prepopulatedTeamId,
         skillLevel: prepopulatedSkillLevel,
         remarks: prepopulatedRemarks,
+        isMVP: searchParams.get("isMVP") === "true",
         photo: null
       });
       
@@ -127,12 +137,11 @@ export default function AddPlayerPage() {
     prepopulatedName,
     prepopulatedSeasonId,
     prepopulatedEventId,
-    prepopulatedTeamId,
     prepopulatedSkillLevel,
-    prepopulatedRemarks
+    prepopulatedRemarks,
+    searchParams
   ]);
 
-  // Handler for text fields
   const handleTextChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -157,7 +166,7 @@ export default function AddPlayerPage() {
       setFormData((prev) => ({
         ...prev,
         [name]: value,
-        teamId: ""  
+        teamId: ""   
       }));
     } else {
       setFormData((prev) => ({
@@ -198,8 +207,24 @@ export default function AddPlayerPage() {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.name.trim()) {
-      setError("Player name is required");
+    if (!formData.firstName.trim()) {
+      setError("First name is required");
+      return false;
+    }
+    
+    if (!formData.lastName.trim()) {
+      setError("Last name is required");
+      return false;
+    }
+    
+    if (!formData.email.trim()) {
+      setError("Email is required");
+      return false;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address");
       return false;
     }
     
@@ -212,7 +237,6 @@ export default function AddPlayerPage() {
       setError("Event is required");
       return false;
     }
-    
     
     return true;
   };
@@ -229,13 +253,15 @@ export default function AddPlayerPage() {
     setLoading(true);
 
     try {
+      const skills = ["skill1"]; 
+      
       const playerData = {
-        name: formData.name,
-        seasonId: formData.seasonId,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
         eventId: formData.eventId,
-        teamId: formData.teamId || undefined,
-        skillLevel: formData.skillLevel,
-        remarks: formData.remarks,
+        skills: skills,
+        isIcon: formData.isMVP
       };
 
       if (editPlayerId) {
@@ -263,12 +289,14 @@ export default function AddPlayerPage() {
         setSuccess("Player created successfully");
         
         setFormData({
-          name: "",
+          firstName: "",
+          lastName: "",
+          email: "",
           seasonId: "",
           eventId: "",
-          teamId: "",
           skillLevel: "Beginner",
           remarks: "",
+          isMVP: false,
           photo: null
         });
         setPhotoPreview(null);
@@ -299,10 +327,6 @@ export default function AddPlayerPage() {
 
   const filteredEvents = formData.seasonId
     ? events.filter((event) => event.seasonId === formData.seasonId)
-    : [];
-
-  const filteredTeams = formData.eventId
-    ? teams.filter((team) => team.eventId === formData.eventId)
     : [];
 
   return (
@@ -392,20 +416,53 @@ export default function AddPlayerPage() {
                 </Button>
               )}
               <Typography variant="caption" color="text.secondary">
-                Supported formats: JPG, PNG, WebP (max 2MB)
+                Supported formats: JPG, PNG (max 2MB)
               </Typography>
             </Box>
 
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                required
+                fullWidth
+                id="firstName"
+                name="firstName"
+                label="First Name"
+                value={formData.firstName}
+                onChange={handleTextChange}
+                error={error.includes("first name") || error.includes("First name")}
+                helperText={error.includes("first name") || error.includes("First name") ? "First name is required" : ""}
+              />
+              
+              <TextField
+                required
+                fullWidth
+                id="lastName"
+                name="lastName"
+                label="Last Name"
+                value={formData.lastName}
+                onChange={handleTextChange}
+                error={error.includes("last name") || error.includes("Last name")}
+                helperText={error.includes("last name") || error.includes("Last name") ? "Last name is required" : ""}
+              />
+            </Box>
+            
             <TextField
               required
               fullWidth
-              id="name"
-              name="name"
-              label="Player Name"
-              value={formData.name}
+              id="email"
+              name="email"
+              label="Email"
+              type="email"
+              value={formData.email}
               onChange={handleTextChange}
-              error={error.includes("name")}
-              helperText={error.includes("name") ? "Player name is required" : ""}
+              error={error.includes("email") || error.includes("Email")}
+              helperText={
+                error.includes("valid email") 
+                  ? "Please enter a valid email address" 
+                  : error.includes("email") || error.includes("Email") 
+                    ? "Email is required" 
+                    : ""
+              }
             />
 
             <FormControl fullWidth required error={error.includes("Season")}>
@@ -469,28 +526,6 @@ export default function AddPlayerPage() {
               )}
             </FormControl>
 
-            <FormControl fullWidth>
-              <InputLabel id="team-label">Team (Optional)</InputLabel>
-              <Select
-                labelId="team-label"
-                id="teamId"
-                name="teamId"
-                value={formData.teamId}
-                label="Team (Optional)"
-                onChange={handleSelectChange}
-                disabled={!formData.eventId}
-              >
-                <MenuItem value="">
-                  <em>No Team / Unassigned</em>
-                </MenuItem>
-                {filteredTeams.map((team) => (
-                  <MenuItem key={team._id} value={team._id}>
-                    {team.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
             <FormControl component="fieldset">
               <FormLabel component="legend">Skill Level</FormLabel>
               <RadioGroup
@@ -505,6 +540,22 @@ export default function AddPlayerPage() {
                 <FormControlLabel value="Pro" control={<Radio />} label="Pro" />
               </RadioGroup>
             </FormControl>
+            
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.isMVP}
+                  onChange={(e) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      isMVP: e.target.checked
+                    }));
+                  }}
+                  name="isMVP"
+                />
+              }
+              label="Mark as Premium Player"
+            />
 
             <TextField
               fullWidth
