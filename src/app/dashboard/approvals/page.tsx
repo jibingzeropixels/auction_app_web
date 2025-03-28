@@ -1,5 +1,5 @@
 // src/app/dashboard/approvals/page.tsx
-'use client';
+"use client";
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/auth-context';
@@ -28,14 +28,16 @@ import {
   Checkbox,
   ListItemText,
   Chip,
-  CircularProgress
-} from '@mui/material';
-import { SelectChangeEvent } from '@mui/material/Select';
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
-import { approvalsService } from '@/services/approvals';
+  CircularProgress,
+} from "@mui/material";
+import { SelectChangeEvent } from "@mui/material/Select";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import { approvalsService } from "@/services/approvals";
 
-// Type definitions
+import CustomPagination from "@/components/CustomPagination";
+import CustomNoRowsOverlay from "@/components/CustomNoRowsOverlay";
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -49,7 +51,6 @@ interface PendingAction {
 
 type ApprovalStatus = 'requested' | 'approved' | 'rejected';
 
-// Define the API response types
 interface ApprovalRequest {
   id: string;
   teamName?: string;
@@ -67,7 +68,6 @@ interface UserWithRequests {
   request: ApprovalRequest[];
 }
 
-// Define row interface for DataGrid
 interface ApprovalRow {
   id: string;
   userId: string;
@@ -87,7 +87,6 @@ const statusOptions = [
   { value: 'rejected', label: 'Rejected', color: 'error' }
 ];
 
-// Status color mapping
 const getStatusChipColor = (status: ApprovalStatus): 'warning' | 'success' | 'error' => {
   switch (status) {
     case 'approved': return 'success';
@@ -109,11 +108,7 @@ function TabPanel(props: TabPanelProps): React.ReactElement {
       aria-labelledby={`approval-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
 }
@@ -138,13 +133,14 @@ export default function ApprovalsPage(): React.ReactElement {
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null
+  );
   const [loading, setLoading] = useState<boolean>(true);
   
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['requested']);
 
   useEffect(() => {
-    // Redirect if not authorized (must be superAdmin or eventAdmin)
     if (user && user.role !== 'superAdmin' && user.role !== 'eventAdmin') {
       router.push('/dashboard');
       return;
@@ -156,14 +152,12 @@ export default function ApprovalsPage(): React.ReactElement {
         setLoading(true);
         
         if (user?.role === 'superAdmin') {
-          // For super admin, fetch both types of approvals
           const eventsData = await approvalsService.getAllApprovals('events');
           const teamsData = await approvalsService.getAllApprovals('teams');
           
           setEventAdminData(eventsData);
           setTeamRepData(teamsData);
         } else {
-          // For event admin, only fetch team representative approvals
           const teamsData = await approvalsService.getAllApprovals('teams');
           setTeamRepData(teamsData);
         }
@@ -181,46 +175,39 @@ export default function ApprovalsPage(): React.ReactElement {
     
   }, [user, router]);
 
-  // Filter event admin approvals based on selected statuses
   const filteredEventAdminData = useMemo(() => {
     return eventAdminData.map(user => {
-      // Filter the requests array based on status
       const filteredRequests = user.request.filter(req => 
         selectedStatuses.includes('all') || selectedStatuses.includes(req.status)
       );
       
-      // Return a new user object with filtered requests
       return {
         ...user,
         request: filteredRequests
       };
-    }).filter(user => user.request.length > 0); // Only include users with matching requests
+    }).filter(user => user.request.length > 0); 
   }, [eventAdminData, selectedStatuses]);
   
-  // Filter team rep approvals based on selected statuses
   const filteredTeamRepData = useMemo(() => {
     return teamRepData.map(user => {
-      // Filter the requests array based on status
       const filteredRequests = user.request.filter(req => 
         selectedStatuses.includes('all') || selectedStatuses.includes(req.status)
       );
       
-      // Return a new user object with filtered requests
       return {
         ...user,
         request: filteredRequests
       };
-    }).filter(user => user.request.length > 0); // Only include users with matching requests
+    }).filter(user => user.request.length > 0); 
   }, [teamRepData, selectedStatuses]);
 
-  // Generate rows for event admin approvals
   const eventAdminRows = useMemo(() => {
     const rows: ApprovalRow[] = [];
     
     filteredEventAdminData.forEach(user => {
       user.request.forEach(req => {
         rows.push({
-          id: `${user._id}-${req.id}`, // Create a unique ID
+          id: `${user._id}-${req.id}`, 
           userId: user._id,
           requestId: req.id,
           name: `${user.firstName} ${user.lastName}`,
@@ -235,14 +222,13 @@ export default function ApprovalsPage(): React.ReactElement {
     return rows;
   }, [filteredEventAdminData]);
   
-  // Generate rows for team rep approvals
   const teamRepRows = useMemo(() => {
     const rows: ApprovalRow[] = [];
     
     filteredTeamRepData.forEach(user => {
       user.request.forEach(req => {
         rows.push({
-          id: `${user._id}-${req.id}`, // Create a unique ID
+          id: `${user._id}-${req.id}`, 
           userId: user._id,
           requestId: req.id,
           name: `${user.firstName} ${user.lastName}`,
@@ -258,7 +244,10 @@ export default function ApprovalsPage(): React.ReactElement {
     return rows;
   }, [filteredTeamRepData]);
 
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number): void => {
+  const handleTabChange = (
+    _event: React.SyntheticEvent,
+    newValue: number
+  ): void => {
     setTabValue(newValue);
   };
 
@@ -284,59 +273,66 @@ export default function ApprovalsPage(): React.ReactElement {
     
     const { id, action } = pendingAction;
     setLoading(true);
-    
+
     try {
-      // This is just a placeholder - we'll implement the actual API call later
-      console.log(`Would ${action} user with ID: ${id}`);
-      
-      // Extract userId and requestId from the composite id
       const [userId, requestId] = id.split('-');
       
-      // Update event admin data if the approval is for an event admin
-      setEventAdminData(prevData => 
-        prevData.map(user => {
-          if (user._id === userId) {
-            return {
-              ...user,
-              request: user.request.map(req => 
-                req.id === requestId 
-                  ? { ...req, status: action === 'approve' ? 'approved' : 'rejected' }
-                  : req
-              )
-            };
-          }
-          return user;
-        })
-      );
+      const approvalType = user?.role === 'superAdmin' 
+        ? (tabValue === 0 ? 'events' : 'teams')
+        : 'teams';
       
-      // Update team rep data if the approval is for a team rep
-      setTeamRepData(prevData => 
-        prevData.map(user => {
-          if (user._id === userId) {
-            return {
-              ...user,
-              request: user.request.map(req => 
-                req.id === requestId 
-                  ? { ...req, status: action === 'approve' ? 'approved' : 'rejected' }
-                  : req
-              )
-            };
-          }
-          return user;
-        })
-      );
+      await approvalsService.updateAdminStatus({
+        userId,
+        requestId,
+        status: action === 'approve' ? 'approved' : 'rejected',
+        type: approvalType
+      });
+      
+      if (approvalType === 'events') {
+        setEventAdminData(prevData => 
+          prevData.map(user => {
+            if (user._id === userId) {
+              return {
+                ...user,
+                request: user.request.map(req => 
+                  req.id === requestId 
+                    ? { ...req, status: action === 'approve' ? 'approved' : 'rejected' }
+                    : req
+                )
+              };
+            }
+            return user;
+          })
+        );
+      } else {
+        setTeamRepData(prevData => 
+          prevData.map(user => {
+            if (user._id === userId) {
+              return {
+                ...user,
+                request: user.request.map(req => 
+                  req.id === requestId 
+                    ? { ...req, status: action === 'approve' ? 'approved' : 'rejected' }
+                    : req
+                )
+              };
+            }
+            return user;
+          })
+        );
+      }
       
       setSuccessMessage(`Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
     } catch (error) {
-      console.error('Error updating approval status:', error);
-      setErrorMessage('Failed to update approval status. Please try again.');
+      console.error("Error updating approval status:", error);
+      setErrorMessage("Failed to update approval status. Please try again.");
     } finally {
       setLoading(false);
     }
 
     setTimeout(() => {
-      setSuccessMessage('');
-      setErrorMessage('');
+      setSuccessMessage("");
+      setErrorMessage("");
     }, 3000);
 
     setConfirmDialogOpen(false);
@@ -348,64 +344,63 @@ export default function ApprovalsPage(): React.ReactElement {
     setPendingAction(null);
   };
 
-  // Define columns for event admin approvals
   const eventAdminColumns: GridColDef[] = [
-    { 
-      field: 'name', 
-      headerName: 'Name', 
+    {
+      field: "name",
+      headerName: "Name",
       flex: 1,
-      headerClassName: 'super-app-theme--header'
+      headerClassName: "super-app-theme--header",
     },
-    { 
-      field: 'email', 
-      headerName: 'Email', 
+    {
+      field: "email",
+      headerName: "Email",
       flex: 1,
-      headerClassName: 'super-app-theme--header'
+      headerClassName: "super-app-theme--header",
     },
-    { 
-      field: 'seasonName', 
-      headerName: 'Season', 
+    {
+      field: "seasonName",
+      headerName: "Season",
       flex: 1,
-      headerClassName: 'super-app-theme--header'
+      headerClassName: "super-app-theme--header",
     },
-    { 
-      field: 'eventName', 
-      headerName: 'Event', 
+    {
+      field: "eventName",
+      headerName: "Event",
       flex: 1,
-      headerClassName: 'super-app-theme--header'
+      headerClassName: "super-app-theme--header",
     },
-    { 
-      field: 'status', 
-      headerName: 'Status', 
+    {
+      field: "status",
+      headerName: "Status",
       flex: 0.7,
-      headerClassName: 'super-app-theme--header',
+      headerClassName: "super-app-theme--header",
       renderCell: (params) => {
         const status = params.value as ApprovalStatus;
         return (
-          <Chip 
-            label={status.charAt(0).toUpperCase() + status.slice(1)} 
-            color={getStatusChipColor(status)} 
-            size="small" 
+          <Chip
+            label={status.charAt(0).toUpperCase() + status.slice(1)}
+            color={getStatusChipColor(status)}
+            size="small"
           />
         );
-      }
+      },
     },
     {
-      field: 'actions',
-      headerName: 'Actions',
+      field: "actions",
+      headerName: "Actions",
       flex: 0.7,
-      headerClassName: 'super-app-theme--header',
+      headerClassName: "super-app-theme--header",
       renderCell: (params) => (
         <Box>
           {params.row.status === 'requested' && (
             <>
               <Tooltip title="Approve">
-                <IconButton 
+                <IconButton
                   aria-label="Approve request"
                   onClick={() => handleActionClick(params.row.id, 'approve')}
-                  sx={{ 
-                    color: 'text.secondary',
-                    '&:hover': { color: 'success.main' } 
+                  sx={{
+                    color: "text.secondary",
+                    "&:hover": { color: "success.main" },
                   }}
                   disabled={loading}
                 >
@@ -413,12 +408,12 @@ export default function ApprovalsPage(): React.ReactElement {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Reject">
-                <IconButton 
+                <IconButton
                   aria-label="Reject request"
                   onClick={() => handleActionClick(params.row.id, 'reject')}
-                  sx={{ 
-                    color: 'text.secondary',
-                    '&:hover': { color: 'error.main' } 
+                  sx={{
+                    color: "text.secondary",
+                    "&:hover": { color: "error.main" },
                   }}
                   disabled={loading}
                 >
@@ -428,23 +423,22 @@ export default function ApprovalsPage(): React.ReactElement {
             </>
           )}
         </Box>
-      )
-    }
+      ),
+    },
   ];
 
-  // Define columns for team representative approvals
   const teamRepColumns: GridColDef[] = [
-    ...eventAdminColumns.slice(0, 4), // Include the first 4 columns from event admin columns
+    ...eventAdminColumns.slice(0, 4), 
     { 
       field: 'teamName', 
       headerName: 'Team', 
       flex: 1,
-      headerClassName: 'super-app-theme--header'
+      headerClassName: "super-app-theme--header",
     },
-    ...eventAdminColumns.slice(4) // Include the remaining columns from event admin columns
+    ...eventAdminColumns.slice(4) 
   ];
 
-  if (!user || (user.role !== 'superAdmin' && user.role !== 'eventAdmin')) {
+  if (!user || (user.role !== "superAdmin" && user.role !== "eventAdmin")) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h6">
@@ -452,7 +446,7 @@ export default function ApprovalsPage(): React.ReactElement {
         </Typography>
         <Button
           variant="contained"
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.push("/dashboard")}
           sx={{ mt: 2 }}
         >
           Return to Dashboard
@@ -466,19 +460,19 @@ export default function ApprovalsPage(): React.ReactElement {
       <Typography variant="h4" component="h1" gutterBottom>
         Approvals
       </Typography>
-      
+
       {successMessage && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {successMessage}
         </Alert>
       )}
-      
+
       {errorMessage && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {errorMessage}
         </Alert>
       )}
-      
+
       <Paper sx={{ p: 2, mb: 2 }}>
         <FormControl sx={{ width: 300 }}>
           <InputLabel id="status-filter-label">Status Filter</InputLabel>
@@ -490,24 +484,36 @@ export default function ApprovalsPage(): React.ReactElement {
             onChange={handleStatusFilterChange}
             input={<OutlinedInput label="Status Filter" />}
             renderValue={(selected) => {
-              if (selected.includes('all')) return 'All';
-              if (selected.length === 0) return 'None';
+              if (selected.includes("all")) return "All";
+              if (selected.length === 0) return "None";
               return selected
-                .map(value => statusOptions.find(option => option.value === value)?.label)
-                .join(', ');
+                .map(
+                  (value) =>
+                    statusOptions.find((option) => option.value === value)
+                      ?.label
+                )
+                .join(", ");
             }}
             MenuProps={MenuProps}
           >
             {statusOptions.map((option) => (
               <MenuItem key={option.value} value={option.value}>
-                <Checkbox checked={selectedStatuses.indexOf(option.value) > -1} />
+                <Checkbox
+                  checked={selectedStatuses.indexOf(option.value) > -1}
+                />
                 <ListItemText primary={option.label} />
-                {option.value !== 'all' && (
-                  <Chip 
-                    label={option.label} 
-                    size="small" 
-                    color={option.color as 'default' | 'warning' | 'success' | 'error'} 
-                    sx={{ ml: 1 }} 
+                {option.value !== "all" && (
+                  <Chip
+                    label={option.label}
+                    size="small"
+                    color={
+                      option.color as
+                        | "default"
+                        | "warning"
+                        | "success"
+                        | "error"
+                    }
+                    sx={{ ml: 1 }}
                   />
                 )}
               </MenuItem>
@@ -515,149 +521,159 @@ export default function ApprovalsPage(): React.ReactElement {
           </Select>
         </FormControl>
       </Paper>
-      
+
       {loading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', m: 3 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", m: 3 }}>
           <CircularProgress />
         </Box>
       )}
-      
+
       {!loading && (
-        <Paper sx={{ width: '100%' }}>
-          {user.role === 'superAdmin' ? (
-          // For Super Admins: Show both tabs
-          <>
-              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <Tabs 
-                  value={tabValue} 
-                  onChange={handleTabChange} 
+        <Paper sx={{ width: "100%" }}>
+          {user.role === "superAdmin" ? (
+            <>
+              <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+                <Tabs
+                  value={tabValue}
+                  onChange={handleTabChange}
                   aria-label="approval tabs"
-              >
-                  <Tab 
-                  label="Event Admins" 
-                  id="approval-tab-0" 
-                  aria-controls="approval-tabpanel-0" 
+                >
+                  <Tab
+                    label="Event Admins"
+                    id="approval-tab-0"
+                    aria-controls="approval-tabpanel-0"
                   />
-                  <Tab 
-                  label="Team Representatives" 
-                  id="approval-tab-1" 
-                  aria-controls="approval-tabpanel-1" 
+                  <Tab
+                    label="Team Representatives"
+                    id="approval-tab-1"
+                    aria-controls="approval-tabpanel-1"
                   />
-              </Tabs>
+                </Tabs>
               </Box>
-              
+
               <TabPanel value={tabValue} index={0}>
                 {eventAdminRows.length > 0 ? (
-                  <Box sx={{ height: 400, width: '100%' }}>
+                  <Box sx={{ height: 400, width: "100%" }}>
                     <DataGrid
                       rows={eventAdminRows}
                       columns={eventAdminColumns}
                       disableColumnMenu
                       getRowId={(row) => row.id}
-                      pageSizeOptions={[10, 25, 50]}
-                      initialState={{
-                        pagination: {
-                          paginationModel: { pageSize: 10, page: 0 },
+                      sx={{
+                        width: "100%",
+                        bgcolor: "white",
+                        "& .MuiDataGrid-cell": { bgcolor: "white" },
+                        "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+                        "& .super-app-theme--header": {
+                          backgroundColor: "#1976d2",
+                          color: "white",
+                          fontWeight: 700,
+                          borderBottom: "2px solid #115293",
                         },
                       }}
-                      sx={{
-                          width: '100%',
-                          bgcolor: 'white',
-                          '& .MuiDataGrid-cell': { bgcolor: 'white' },
-                          '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
-                          '& .super-app-theme--header': {
-                          backgroundColor: '#1976d2',
-                          color: 'white',
-                          fontWeight: 700,
-                          borderBottom: '2px solid #115293',
-                          },
+                      pagination
+                      initialState={{
+                        pagination: {
+                          paginationModel: { page: 0, pageSize: 10 },
+                        },
+                      }}
+                      slots={{
+                        pagination: CustomPagination,
+                        noRowsOverlay: CustomNoRowsOverlay,
                       }}
                     />
                   </Box>
                 ) : (
-                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Box sx={{ p: 3, textAlign: "center" }}>
                     <Typography variant="body1" color="text.secondary">
                       No event admin approvals found.
                     </Typography>
                   </Box>
                 )}
               </TabPanel>
-              
+
               <TabPanel value={tabValue} index={1}>
                 {teamRepRows.length > 0 ? (
-                  <Box sx={{ height: 400, width: '100%' }}>
+                  <Box sx={{ height: 400, width: "100%" }}>
                     <DataGrid
                       rows={teamRepRows}
                       columns={teamRepColumns}
                       disableColumnMenu
                       getRowId={(row) => row.id}
-                      pageSizeOptions={[10, 25, 50]}
-                      initialState={{
-                        pagination: {
-                          paginationModel: { pageSize: 10, page: 0 },
+                      sx={{
+                        width: "100%",
+                        bgcolor: "white",
+                        "& .MuiDataGrid-cell": { bgcolor: "white" },
+                        "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+                        "& .super-app-theme--header": {
+                          backgroundColor: "#1976d2",
+                          color: "white",
+                          fontWeight: 700,
+                          borderBottom: "2px solid #115293",
                         },
                       }}
-                      sx={{
-                          width: '100%',
-                          bgcolor: 'white',
-                          '& .MuiDataGrid-cell': { bgcolor: 'white' },
-                          '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
-                          '& .super-app-theme--header': {
-                          backgroundColor: '#1976d2',
-                          color: 'white',
-                          fontWeight: 700,
-                          borderBottom: '2px solid #115293',
-                          },
+                      pagination
+                      initialState={{
+                        pagination: {
+                          paginationModel: { page: 0, pageSize: 10 },
+                        },
+                      }}
+                      slots={{
+                        pagination: CustomPagination,
+                        noRowsOverlay: CustomNoRowsOverlay,
                       }}
                     />
                   </Box>
                 ) : (
-                  <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <Box sx={{ p: 3, textAlign: "center" }}>
                     <Typography variant="body1" color="text.secondary">
                       No team representative approvals found.
                     </Typography>
                   </Box>
                 )}
               </TabPanel>
-          </>
+            </>
           ) : (
-          // For Event Admins: Show just one table
-          <Box sx={{ p: 3 }}>
+            <Box sx={{ p: 3 }}>
               {teamRepRows.length > 0 ? (
-                <Box sx={{ height: 400, width: '100%' }}>
+                <Box sx={{ height: 400, width: "100%" }}>
                   <DataGrid
                     rows={teamRepRows}
                     columns={teamRepColumns}
                     disableColumnMenu
                     getRowId={(row) => row.id}
-                    pageSizeOptions={[10, 25, 50]}
-                    initialState={{
-                      pagination: {
-                        paginationModel: { pageSize: 10, page: 0 },
+                    sx={{
+                      width: "100%",
+                      bgcolor: "white",
+                      "& .MuiDataGrid-cell": { bgcolor: "white" },
+                      "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
+                      "& .super-app-theme--header": {
+                        backgroundColor: "#1976d2",
+                        color: "white",
+                        fontWeight: 700,
+                        borderBottom: "2px solid #115293",
                       },
                     }}
-                    sx={{
-                      width: '100%',
-                      bgcolor: 'white',
-                      '& .MuiDataGrid-cell': { bgcolor: 'white' },
-                      '& .MuiDataGrid-footerContainer': { bgcolor: 'white' },
-                      '& .super-app-theme--header': {
-                        backgroundColor: '#1976d2',
-                        color: 'white',
-                        fontWeight: 700,
-                        borderBottom: '2px solid #115293',
+                    pagination
+                    initialState={{
+                      pagination: {
+                        paginationModel: { page: 0, pageSize: 10 },
                       },
+                    }}
+                    slots={{
+                      pagination: CustomPagination,
+                      noRowsOverlay: CustomNoRowsOverlay,
                     }}
                   />
                 </Box>
               ) : (
-                <Box sx={{ textAlign: 'center' }}>
+                <Box sx={{ textAlign: "center" }}>
                   <Typography variant="body1" color="text.secondary">
                     No team representative approvals found.
                   </Typography>
                 </Box>
               )}
-          </Box>
+            </Box>
           )}
         </Paper>
       )}
@@ -669,23 +685,25 @@ export default function ApprovalsPage(): React.ReactElement {
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">
-          {pendingAction?.action === 'approve' ? "Confirm Approval" : "Confirm Rejection"}
+          {pendingAction?.action === "approve"
+            ? "Confirm Approval"
+            : "Confirm Rejection"}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            {pendingAction?.action === 'approve' 
+            {pendingAction?.action === "approve"
               ? "Are you sure you want to approve this request? This will grant access to the user."
               : "Are you sure you want to reject this request? This action cannot be undone."}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelAction}>Cancel</Button>
-          <Button 
-            onClick={handleConfirmAction} 
-            color={pendingAction?.action === 'approve' ? "primary" : "error"} 
+          <Button
+            onClick={handleConfirmAction}
+            color={pendingAction?.action === "approve" ? "primary" : "error"}
             autoFocus
           >
-            {pendingAction?.action === 'approve' ? "Approve" : "Reject"}
+            {pendingAction?.action === "approve" ? "Approve" : "Reject"}
           </Button>
         </DialogActions>
       </Dialog>
