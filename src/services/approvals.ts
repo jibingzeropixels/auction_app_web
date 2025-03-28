@@ -44,10 +44,36 @@ export const approvalsService = {
     userId: string;
     requestId: string;
     status: 'approved' | 'rejected';
+    type: 'events' | 'teams';
   }) => {
     try {
-      console.log("Would update status with:", data);
-      return { success: true }; 
+      const apiData = {
+        userId: data.userId,
+        attributeId: data.requestId,
+        attributeType: data.type === 'events' ? 'event' : 'team',
+        approved: data.status === 'approved'
+      };
+      
+      console.log("Calling updateAdminStatus API:", `${API_BASE_URL}/approvals/adminStatusUpdate`);
+      console.log("With data:", apiData);
+      
+      const response = await fetch(`${API_BASE_URL}/approvals/adminStatusUpdate`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(apiData),
+      });
+
+      console.log("API Response status:", response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`Failed to update approval status: ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log("Success response:", responseData);
+      return responseData;
     } catch (error) {
       console.error("Error updating approval status:", error);
       throw error;

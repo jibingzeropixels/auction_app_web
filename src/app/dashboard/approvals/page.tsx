@@ -35,7 +35,6 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { approvalsService } from '@/services/approvals';
 
-// Type definitions
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -49,7 +48,6 @@ interface PendingAction {
 
 type ApprovalStatus = 'requested' | 'approved' | 'rejected';
 
-// Define the API response types
 interface ApprovalRequest {
   id: string;
   teamName?: string;
@@ -67,7 +65,6 @@ interface UserWithRequests {
   request: ApprovalRequest[];
 }
 
-// Define row interface for DataGrid
 interface ApprovalRow {
   id: string;
   userId: string;
@@ -87,7 +84,6 @@ const statusOptions = [
   { value: 'rejected', label: 'Rejected', color: 'error' }
 ];
 
-// Status color mapping
 const getStatusChipColor = (status: ApprovalStatus): 'warning' | 'success' | 'error' => {
   switch (status) {
     case 'approved': return 'success';
@@ -144,7 +140,6 @@ export default function ApprovalsPage(): React.ReactElement {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['requested']);
 
   useEffect(() => {
-    // Redirect if not authorized (must be superAdmin or eventAdmin)
     if (user && user.role !== 'superAdmin' && user.role !== 'eventAdmin') {
       router.push('/dashboard');
       return;
@@ -156,14 +151,12 @@ export default function ApprovalsPage(): React.ReactElement {
         setLoading(true);
         
         if (user?.role === 'superAdmin') {
-          // For super admin, fetch both types of approvals
           const eventsData = await approvalsService.getAllApprovals('events');
           const teamsData = await approvalsService.getAllApprovals('teams');
           
           setEventAdminData(eventsData);
           setTeamRepData(teamsData);
         } else {
-          // For event admin, only fetch team representative approvals
           const teamsData = await approvalsService.getAllApprovals('teams');
           setTeamRepData(teamsData);
         }
@@ -181,46 +174,39 @@ export default function ApprovalsPage(): React.ReactElement {
     
   }, [user, router]);
 
-  // Filter event admin approvals based on selected statuses
   const filteredEventAdminData = useMemo(() => {
     return eventAdminData.map(user => {
-      // Filter the requests array based on status
       const filteredRequests = user.request.filter(req => 
         selectedStatuses.includes('all') || selectedStatuses.includes(req.status)
       );
       
-      // Return a new user object with filtered requests
       return {
         ...user,
         request: filteredRequests
       };
-    }).filter(user => user.request.length > 0); // Only include users with matching requests
+    }).filter(user => user.request.length > 0); 
   }, [eventAdminData, selectedStatuses]);
   
-  // Filter team rep approvals based on selected statuses
   const filteredTeamRepData = useMemo(() => {
     return teamRepData.map(user => {
-      // Filter the requests array based on status
       const filteredRequests = user.request.filter(req => 
         selectedStatuses.includes('all') || selectedStatuses.includes(req.status)
       );
       
-      // Return a new user object with filtered requests
       return {
         ...user,
         request: filteredRequests
       };
-    }).filter(user => user.request.length > 0); // Only include users with matching requests
+    }).filter(user => user.request.length > 0);
   }, [teamRepData, selectedStatuses]);
 
-  // Generate rows for event admin approvals
   const eventAdminRows = useMemo(() => {
     const rows: ApprovalRow[] = [];
     
     filteredEventAdminData.forEach(user => {
       user.request.forEach(req => {
         rows.push({
-          id: `${user._id}-${req.id}`, // Create a unique ID
+          id: `${user._id}-${req.id}`, 
           userId: user._id,
           requestId: req.id,
           name: `${user.firstName} ${user.lastName}`,
@@ -235,14 +221,13 @@ export default function ApprovalsPage(): React.ReactElement {
     return rows;
   }, [filteredEventAdminData]);
   
-  // Generate rows for team rep approvals
   const teamRepRows = useMemo(() => {
     const rows: ApprovalRow[] = [];
     
     filteredTeamRepData.forEach(user => {
       user.request.forEach(req => {
         rows.push({
-          id: `${user._id}-${req.id}`, // Create a unique ID
+          id: `${user._id}-${req.id}`, 
           userId: user._id,
           requestId: req.id,
           name: `${user.firstName} ${user.lastName}`,
@@ -286,45 +271,52 @@ export default function ApprovalsPage(): React.ReactElement {
     setLoading(true);
     
     try {
-      // This is just a placeholder - we'll implement the actual API call later
-      console.log(`Would ${action} user with ID: ${id}`);
-      
-      // Extract userId and requestId from the composite id
       const [userId, requestId] = id.split('-');
       
-      // Update event admin data if the approval is for an event admin
-      setEventAdminData(prevData => 
-        prevData.map(user => {
-          if (user._id === userId) {
-            return {
-              ...user,
-              request: user.request.map(req => 
-                req.id === requestId 
-                  ? { ...req, status: action === 'approve' ? 'approved' : 'rejected' }
-                  : req
-              )
-            };
-          }
-          return user;
-        })
-      );
+      const approvalType = user?.role === 'superAdmin' 
+        ? (tabValue === 0 ? 'events' : 'teams')
+        : 'teams';
       
-      // Update team rep data if the approval is for a team rep
-      setTeamRepData(prevData => 
-        prevData.map(user => {
-          if (user._id === userId) {
-            return {
-              ...user,
-              request: user.request.map(req => 
-                req.id === requestId 
-                  ? { ...req, status: action === 'approve' ? 'approved' : 'rejected' }
-                  : req
-              )
-            };
-          }
-          return user;
-        })
-      );
+      await approvalsService.updateAdminStatus({
+        userId,
+        requestId,
+        status: action === 'approve' ? 'approved' : 'rejected',
+        type: approvalType
+      });
+      
+      if (approvalType === 'events') {
+        setEventAdminData(prevData => 
+          prevData.map(user => {
+            if (user._id === userId) {
+              return {
+                ...user,
+                request: user.request.map(req => 
+                  req.id === requestId 
+                    ? { ...req, status: action === 'approve' ? 'approved' : 'rejected' }
+                    : req
+                )
+              };
+            }
+            return user;
+          })
+        );
+      } else {
+        setTeamRepData(prevData => 
+          prevData.map(user => {
+            if (user._id === userId) {
+              return {
+                ...user,
+                request: user.request.map(req => 
+                  req.id === requestId 
+                    ? { ...req, status: action === 'approve' ? 'approved' : 'rejected' }
+                    : req
+                )
+              };
+            }
+            return user;
+          })
+        );
+      }
       
       setSuccessMessage(`Request ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
     } catch (error) {
@@ -348,7 +340,6 @@ export default function ApprovalsPage(): React.ReactElement {
     setPendingAction(null);
   };
 
-  // Define columns for event admin approvals
   const eventAdminColumns: GridColDef[] = [
     { 
       field: 'name', 
@@ -432,16 +423,15 @@ export default function ApprovalsPage(): React.ReactElement {
     }
   ];
 
-  // Define columns for team representative approvals
   const teamRepColumns: GridColDef[] = [
-    ...eventAdminColumns.slice(0, 4), // Include the first 4 columns from event admin columns
+    ...eventAdminColumns.slice(0, 4), 
     { 
       field: 'teamName', 
       headerName: 'Team', 
       flex: 1,
       headerClassName: 'super-app-theme--header'
     },
-    ...eventAdminColumns.slice(4) // Include the remaining columns from event admin columns
+    ...eventAdminColumns.slice(4) 
   ];
 
   if (!user || (user.role !== 'superAdmin' && user.role !== 'eventAdmin')) {
@@ -525,7 +515,6 @@ export default function ApprovalsPage(): React.ReactElement {
       {!loading && (
         <Paper sx={{ width: '100%' }}>
           {user.role === 'superAdmin' ? (
-          // For Super Admins: Show both tabs
           <>
               <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs 
@@ -621,7 +610,6 @@ export default function ApprovalsPage(): React.ReactElement {
               </TabPanel>
           </>
           ) : (
-          // For Event Admins: Show just one table
           <Box sx={{ p: 3 }}>
               {teamRepRows.length > 0 ? (
                 <Box sx={{ height: 400, width: '100%' }}>
