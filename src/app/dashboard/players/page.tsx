@@ -17,7 +17,7 @@ import {
   FormControl,
   Autocomplete,
   CircularProgress,
-  Chip
+  Chip,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -52,34 +52,41 @@ type Player = {
   category: string;
   status: "available" | "sold" | "unsold";
   eventId: string;
+  email: string;
   createdAt: string;
 };
 
 export default function PlayersPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [events, setEvents] = useState<EventType[]>([]);
   const [teams, setTeams] = useState<TeamType[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [filteredPlayers, setFilteredPlayers] = useState<Player[]>([]);
-  
-  const [selectedSeason, setSelectedSeason] = useState<Season | { _id: "all"; name: string }>({
+
+  const [selectedSeason, setSelectedSeason] = useState<
+    Season | { _id: "all"; name: string }
+  >({
     _id: "all",
     name: "All Seasons",
   });
-  const [selectedEvent, setSelectedEvent] = useState<EventType | { _id: "all"; name: string; seasonId: "all" }>({
+  const [selectedEvent, setSelectedEvent] = useState<
+    EventType | { _id: "all"; name: string; seasonId: "all" }
+  >({
     _id: "all",
     name: "All Events",
     seasonId: "all",
   });
-  const [selectedTeam, setSelectedTeam] = useState<TeamType | { _id: "all"; name: string; eventId: "all" }>({
+  const [selectedTeam, setSelectedTeam] = useState<
+    TeamType | { _id: "all"; name: string; eventId: "all" }
+  >({
     _id: "all",
     name: "All Teams",
     eventId: "all",
   });
-  
+
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [computedMaxWidth, setComputedMaxWidth] = useState("100%");
@@ -96,31 +103,34 @@ export default function PlayersPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [fetchedSeasons, fetchedEvents, fetchedTeams, fetchedPlayers] = await Promise.all(
-          [
+        const [fetchedSeasons, fetchedEvents, fetchedTeams, fetchedPlayers] =
+          await Promise.all([
             seasonsService.getAllSeasons(),
             eventsService.getAllEvents(),
             teamsService.getAllTeams(),
             playersService.getAllPlayers(),
-          ]
-        );
+          ]);
         setSeasons(fetchedSeasons);
         setEvents(fetchedEvents);
         setTeams(fetchedTeams);
-        
+
         // Convert API players to the format needed for the UI
-        const formattedPlayers: Player[] = fetchedPlayers.map(player => ({
+        const formattedPlayers: Player[] = fetchedPlayers.map((player) => ({
           _id: player._id,
           name: `${player.firstName} ${player.lastName}`,
           teamId: player.teamId || null,
-          category: player.skills && player.skills.length > 0 ? 
-            (typeof player.skills[0] === 'string' ? player.skills[0] : 
-             Object.keys(player.skills[0])[0] || 'Unknown') : 'Unknown',
-          status: player.soldStatus || 'available',
+          category:
+            player.skills && player.skills.length > 0
+              ? typeof player.skills[0] === "string"
+                ? player.skills[0]
+                : Object.keys(player.skills[0])[0] || "Unknown"
+              : "Unknown",
+          status: player.soldStatus || "available",
           eventId: player.eventId || "",
-          createdAt: player.createdAt
+          email: player.email || "",
+          createdAt: player.createdAt,
         }));
-        
+
         setPlayers(formattedPlayers);
         setFilteredPlayers(formattedPlayers);
       } catch (error) {
@@ -129,34 +139,43 @@ export default function PlayersPage() {
         setLoading(false);
       }
     }
-    
+
     fetchData();
   }, []);
 
   useEffect(() => {
-    const filtered = players.filter(player => {
-      const playerEvent = events.find(e => e._id === player.eventId);
-      
-      const eventBelongsToSeason = 
-        selectedSeason._id === "all" || 
+    const filtered = players.filter((player) => {
+      const playerEvent = events.find((e) => e._id === player.eventId);
+
+      const eventBelongsToSeason =
+        selectedSeason._id === "all" ||
         playerEvent?.seasonId === selectedSeason._id;
-      
-      const belongsToEvent = 
-        selectedEvent._id === "all" || 
-        player.eventId === selectedEvent._id;
-      
-      const belongsToTeam = 
-        selectedTeam._id === "all" || 
-        player.teamId === selectedTeam._id;
-      
-      const matchesSearch = 
-        player.name.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      return eventBelongsToSeason && belongsToEvent && belongsToTeam && matchesSearch;
+
+      const belongsToEvent =
+        selectedEvent._id === "all" || player.eventId === selectedEvent._id;
+
+      const belongsToTeam =
+        selectedTeam._id === "all" || player.teamId === selectedTeam._id;
+
+      const matchesSearch = player.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+      return (
+        eventBelongsToSeason && belongsToEvent && belongsToTeam && matchesSearch
+      );
     });
-    
+
     setFilteredPlayers(filtered);
-  }, [selectedSeason, selectedEvent, selectedTeam, searchTerm, players, events, teams]);
+  }, [
+    selectedSeason,
+    selectedEvent,
+    selectedTeam,
+    searchTerm,
+    players,
+    events,
+    teams,
+  ]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -197,10 +216,17 @@ export default function PlayersPage() {
   };
 
   const handleEdit = (playerId: string) => {
-    const player = players.find(p => p._id === playerId);
+    const player = players.find((p) => p._id === playerId);
     if (!player) return;
-    
-    router.push(`/dashboard/players/add?edit=${playerId}&name=${encodeURIComponent(player.name)}&eventId=${encodeURIComponent(player.eventId)}&category=${encodeURIComponent(player.category)}`);
+
+    router.push(
+      `/dashboard/players/add?edit=${playerId}&name=${encodeURIComponent(
+        player.name
+      )}&eventId=${encodeURIComponent(
+        player.eventId
+      )}&category=${encodeURIComponent(player.category)}
+      &email=${encodeURIComponent(player.email)}`
+    );
   };
 
   const handleDeleteClick = (player: Player) => {
@@ -213,15 +239,15 @@ export default function PlayersPage() {
       try {
         setLoading(true);
         await playersService.deletePlayer(selectedPlayer._id);
-        
-        setPlayers(prevPlayers => 
-          prevPlayers.filter(p => p._id !== selectedPlayer._id)
+
+        setPlayers((prevPlayers) =>
+          prevPlayers.filter((p) => p._id !== selectedPlayer._id)
         );
-        
-        setFilteredPlayers(prevPlayers => 
-          prevPlayers.filter(p => p._id !== selectedPlayer._id)
+
+        setFilteredPlayers((prevPlayers) =>
+          prevPlayers.filter((p) => p._id !== selectedPlayer._id)
         );
-        
+
         setOpenDeleteDialog(false);
         setSelectedPlayer(null);
       } catch (error) {
@@ -234,10 +260,14 @@ export default function PlayersPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "available": return "primary";
-      case "sold": return "success";
-      case "unsold": return "error";
-      default: return "default";
+      case "available":
+        return "primary";
+      case "sold":
+        return "success";
+      case "unsold":
+        return "error";
+      default:
+        return "default";
     }
   };
 
@@ -261,9 +291,15 @@ export default function PlayersPage() {
       width: 120,
       headerClassName: "super-app-theme--header",
       renderCell: (params) => (
-        <Chip 
-          label={params.value.charAt(0).toUpperCase() + params.value.slice(1)} 
-          color={getStatusColor(params.value) as "primary" | "success" | "error" | "default"}
+        <Chip
+          label={params.value.charAt(0).toUpperCase() + params.value.slice(1)}
+          color={
+            getStatusColor(params.value) as
+              | "primary"
+              | "success"
+              | "error"
+              | "default"
+          }
           size="small"
         />
       ),
@@ -274,8 +310,9 @@ export default function PlayersPage() {
       width: 180,
       headerClassName: "super-app-theme--header",
       renderCell: (params) => {
-        const teamName = params.value 
-          ? teams.find(team => team._id === params.value)?.name || "Unknown Team"
+        const teamName = params.value
+          ? teams.find((team) => team._id === params.value)?.name ||
+            "Unknown Team"
           : "Not Assigned";
         return <span>{teamName}</span>;
       },
@@ -319,19 +356,16 @@ export default function PlayersPage() {
     },
   ];
 
-  const seasonOptions = [
-    { _id: "all", name: "All Seasons" },
-    ...seasons
-  ];
-  
+  const seasonOptions = [{ _id: "all", name: "All Seasons" }, ...seasons];
+
   const eventOptions = [
     { _id: "all", name: "All Events", seasonId: "all" },
-    ...events
+    ...events,
   ];
-  
+
   const teamOptions = [
     { _id: "all", name: "All Teams", eventId: "all" },
-    ...teams
+    ...teams,
   ];
 
   return (
@@ -456,8 +490,8 @@ export default function PlayersPage() {
                 const currentPage = Math.ceil(from / 10);
                 const totalPages = Math.max(1, Math.ceil(count / 10));
                 return `Page ${currentPage} of ${totalPages}`;
-              }
-            }
+              },
+            },
           }}
           sx={{
             width: "100%",

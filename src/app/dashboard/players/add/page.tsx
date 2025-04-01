@@ -53,42 +53,43 @@ interface Event {
 }
 
 const SKILLS = [
-  'Batsman',
-  'Bowler',
-  'All-rounder',
-  'Wicket Keeper',
-  'Fielder',
-  'Spinner',
-  'Fast Bowler',
-  'Medium Pacer',
-  'Opening Batsman',
-  'Middle Order Batsman',
-  'Finisher',
-  'Football',
-  'Cricket',
-  'Badminton',
-  'Table-Tennis',
-  'Swimming',
-  'Dancing',
-  'Singing',
-  'Foosball',
-  'Carroms',
-  'Chess',
+  "Batsman",
+  "Bowler",
+  "All-rounder",
+  "Wicket Keeper",
+  "Fielder",
+  "Spinner",
+  "Fast Bowler",
+  "Medium Pacer",
+  "Opening Batsman",
+  "Middle Order Batsman",
+  "Finisher",
+  "Football",
+  "Cricket",
+  "Badminton",
+  "Table-Tennis",
+  "Swimming",
+  "Dancing",
+  "Singing",
+  "Foosball",
+  "Carroms",
+  "Chess",
 ];
 
 export default function AddPlayerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editPlayerId = searchParams.get("edit");
-  
+
   const playerName = searchParams.get("name") || "";
   const nameParts = playerName.split(" ");
   const initialFirstName = nameParts[0] || "";
   const initialLastName = nameParts.slice(1).join(" ") || "";
-  
+
   const initialCategory = searchParams.get("category") || "";
   const initialEventId = searchParams.get("eventId") || "";
-  
+  const initialEmail = searchParams.get("email") || "";
+
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
   const [success, setSuccess] = useState<string>("");
@@ -99,7 +100,7 @@ export default function AddPlayerPage() {
   const [formData, setFormData] = useState<FormData>({
     firstName: initialFirstName,
     lastName: initialLastName,
-    email: "",
+    email: initialEmail,
     phone: "",
     skills: initialCategory ? [initialCategory] : [],
     isIcon: false,
@@ -114,13 +115,15 @@ export default function AddPlayerPage() {
         setSeasons(seasonsData);
         const eventsData = await eventsService.getAllEvents();
         setEvents(eventsData);
-        
+
         if (initialEventId) {
-          const event = eventsData.find((event: Event) => event._id === initialEventId);
+          const event = eventsData.find(
+            (event: Event) => event._id === initialEventId
+          );
           if (event) {
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
-              seasonId: event.seasonId
+              seasonId: event.seasonId,
             }));
           }
         }
@@ -173,7 +176,7 @@ export default function AddPlayerPage() {
     const { value } = event.target;
     setFormData((prev) => ({
       ...prev,
-      skills: typeof value === 'string' ? value.split(',') : value,
+      skills: typeof value === "string" ? value.split(",") : value,
     }));
   };
 
@@ -191,32 +194,32 @@ export default function AddPlayerPage() {
       setError("First name is required");
       return false;
     }
-    
+
     if (!formData.lastName.trim()) {
       setError("Last name is required");
       return false;
     }
-    
+
     if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
       setError("Please enter a valid email address");
       return false;
     }
-    
+
     if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
       setError("Please enter a valid 10-digit phone number");
       return false;
     }
-    
+
     if (!formData.skills.length) {
       setError("Please select at least one skill");
       return false;
     }
-    
+
     if (!formData.eventId) {
       setError("Please select an event");
       return false;
     }
-    
+
     return true;
   };
 
@@ -237,7 +240,7 @@ export default function AddPlayerPage() {
           playerId: editPlayerId,
           firstName: formData.firstName,
           lastName: formData.lastName,
-          email: formData.email || undefined,
+          email: formData.email,
           phone: formData.phone || null,
           skills: formData.skills,
           isIcon: formData.isIcon,
@@ -248,7 +251,7 @@ export default function AddPlayerPage() {
         await playersService.createPlayer({
           firstName: formData.firstName,
           lastName: formData.lastName,
-          email: formData.email || undefined,
+          email: formData.email,
           phone: formData.phone || null,
           skills: formData.skills,
           isIcon: formData.isIcon,
@@ -266,7 +269,7 @@ export default function AddPlayerPage() {
           seasonId: "",
         });
       }
-      
+
       setTimeout(() => {
         router.push("/dashboard/players");
       }, 2000);
@@ -304,7 +307,9 @@ export default function AddPlayerPage() {
           <Link
             color="inherit"
             href="/dashboard/players"
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => handleLinkClick(event, "/dashboard/players")}
+            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) =>
+              handleLinkClick(event, "/dashboard/players")
+            }
           >
             Players
           </Link>
@@ -333,7 +338,7 @@ export default function AddPlayerPage() {
 
         <Box component="form" onSubmit={handleSubmit}>
           <Stack spacing={3}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
               <TextField
                 required
                 fullWidth
@@ -344,7 +349,7 @@ export default function AddPlayerPage() {
                 onChange={handleTextChange}
                 error={error.includes("First name")}
               />
-              
+
               <TextField
                 required
                 fullWidth
@@ -358,6 +363,7 @@ export default function AddPlayerPage() {
             </Box>
 
             <TextField
+              required
               fullWidth
               id="email"
               name="email"
@@ -366,7 +372,6 @@ export default function AddPlayerPage() {
               value={formData.email}
               onChange={handleTextChange}
               error={error.includes("email")}
-              helperText="Optional"
             />
 
             <TextField
@@ -389,9 +394,11 @@ export default function AddPlayerPage() {
                 multiple
                 value={formData.skills}
                 onChange={handleSkillsChange}
-                input={<OutlinedInput id="select-multiple-skills" label="Skills" />}
+                input={
+                  <OutlinedInput id="select-multiple-skills" label="Skills" />
+                }
                 renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                     {selected.map((value) => (
                       <Chip key={value} label={value} />
                     ))}
