@@ -11,17 +11,11 @@ const getAuthHeaders = () => {
 };
 
 export const auctionService = {
-  getRandomPlayer: async (eventId: string, budget = 1000, teamSize = 16, basePrice = 10): Promise<ApiPlayer> => {
+  getRandomPlayer: async (eventId: string): Promise<ApiPlayer> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auctions/getRandomPlayers`, {
-        method: "POST",
+      const response = await fetch(`${API_BASE_URL}/auctions/getRandomPlayers?eventId=${eventId}`, {
+        method: "GET",
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-          budget,
-          teamSize,
-          basePrice,
-          eventId
-        }),
       });
 
       if (!response.ok) {
@@ -29,13 +23,7 @@ export const auctionService = {
         throw new Error(errorData.message || "Failed to fetch random player");
       }
 
-      const responseData = await response.json();
-      
-      if (responseData && typeof responseData === 'object' && 'data' in responseData) {
-        return responseData.data;
-      }
-      
-      return responseData;
+      return await response.json();
     } catch (error) {
       console.error("Error fetching random player:", error);
       throw error;

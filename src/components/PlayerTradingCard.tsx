@@ -62,8 +62,25 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
       'chess': '#795548'
     };
     
-    const skill = skills[0].toLowerCase();
-    return colorMap[skill] || '#2196f3';
+    // Handle both array of strings and array of objects
+    const firstSkill = skills[0];
+    let skillName: string;
+
+    if (typeof firstSkill === 'string') {
+      skillName = firstSkill.toLowerCase();
+    } else if (firstSkill && typeof firstSkill === 'object') {
+      // Get the first key from the object
+      const keys = Object.keys(firstSkill);
+      if (keys.length > 0) {
+        skillName = keys[0].toLowerCase();
+      } else {
+        return '#2196f3'; // Default blue
+      }
+    } else {
+      return '#2196f3'; // Default blue
+    }
+    
+    return colorMap[skillName] || '#2196f3';
   };
   
   const getGradient = (color: string) => {
@@ -77,7 +94,24 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
     });
   };
   
-  const getSkillIcon = (skill: string) => {
+  const getSkillLabel = (skill: any): string => {
+    if (typeof skill === 'string') {
+      return skill;
+    } 
+    
+    if (skill && typeof skill === 'object') {
+      const keys = Object.keys(skill);
+      if (keys.length > 0) {
+        const key = keys[0];
+        const value = skill[key];
+        return value ? `${key} (${value})` : key;
+      }
+    }
+    
+    return 'Unknown';
+  };
+  
+  const getSkillIcon = (skill: any) => {
     const iconMap: Record<string, string> = {
       'football': '⚽',
       'cricket': '🏏',
@@ -91,7 +125,22 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
       'chess': '♟️'
     };
     
-    return iconMap[skill.toLowerCase()] || '🌟';
+    let skillName: string;
+    
+    if (typeof skill === 'string') {
+      skillName = skill.toLowerCase();
+    } else if (skill && typeof skill === 'object') {
+      const keys = Object.keys(skill);
+      if (keys.length > 0) {
+        skillName = keys[0].toLowerCase();
+      } else {
+        return '🌟';
+      }
+    } else {
+      return '🌟'; // Default star
+    }
+    
+    return iconMap[skillName] || '🌟';
   };
   
   const cardColor = getCardColor();
@@ -232,7 +281,7 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
             skills.map((skill, index) => (
               <Chip
                 key={index}
-                label={skill}
+                label={getSkillLabel(skill)}
                 size="small"
                 icon={<Box component="span" sx={{ ml: 1 }}>{getSkillIcon(skill)}</Box>}
                 sx={{ 

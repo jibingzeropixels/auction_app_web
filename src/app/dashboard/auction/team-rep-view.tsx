@@ -190,79 +190,77 @@ const TeamRepAuctionView = () => {
       
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-        // Update for the Team Rep View
-// Replace the currently bidding section with this code
 
-<Paper sx={{ p: 3, mb: 3 }}>
-  {currentPlayer ? (
-    <>
-      <Typography variant="h6" gutterBottom sx={{ mb: 3, borderBottom: '2px solid #f0f0f0', pb: 1 }}>
-        Currently Bidding
-      </Typography>
-      
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
-          <PlayerTradingCard player={currentPlayer} />
-        </Grid>
-        
-        <Grid item xs={12} md={7}>
-          <Box sx={{ 
-            p: 3, 
-            bgcolor: 'primary.main', 
-            color: 'white', 
-            borderRadius: 4,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            justifyContent: 'center',
-            background: 'linear-gradient(135deg, #1976d2, #0d47a1)'
-          }}>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-              Your Bidding Limit
-            </Typography>
-            <Typography variant="h2" sx={{ 
-              fontWeight: 'bold',
-              textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-              letterSpacing: '-0.5px'
-            }}>
-              ₹{calculateMaxBid().toLocaleString()}
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-              This is the maximum amount you can bid for this player based on your remaining budget and squad needs.
+        <Paper sx={{ p: 3, mb: 3 }}>
+        {currentPlayer ? (
+            <>
+            <Typography variant="h6" gutterBottom sx={{ mb: 3, borderBottom: '2px solid #f0f0f0', pb: 1 }}>
+                Currently Bidding
             </Typography>
             
-            {/* Decorative elements */}
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
+                <PlayerTradingCard player={currentPlayer} />
+                </Grid>
+                
+                <Grid item xs={12} md={7}>
+                <Box sx={{ 
+                    p: 3, 
+                    bgcolor: 'primary.main', 
+                    color: 'white', 
+                    borderRadius: 4,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    justifyContent: 'center',
+                    background: 'linear-gradient(135deg, #1976d2, #0d47a1)'
+                }}>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Your Bidding Limit
+                    </Typography>
+                    <Typography variant="h2" sx={{ 
+                    fontWeight: 'bold',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    letterSpacing: '-0.5px'
+                    }}>
+                    ₹{calculateMaxBid().toLocaleString()}
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
+                    This is the maximum amount you can bid for this player based on your remaining budget and squad needs.
+                    </Typography>
+                    
+                    {/* Decorative elements */}
+                    <Box sx={{ 
+                    position: 'absolute', 
+                    top: 10, 
+                    right: 10, 
+                    fontSize: '1.8rem', 
+                    opacity: 0.2,
+                    transform: 'rotate(15deg)'
+                    }}>
+                    💰
+                    </Box>
+                </Box>
+                </Grid>
+            </Grid>
+            </>
+        ) : (
             <Box sx={{ 
-              position: 'absolute', 
-              top: 10, 
-              right: 10, 
-              fontSize: '1.8rem', 
-              opacity: 0.2,
-              transform: 'rotate(15deg)'
+            textAlign: 'center', 
+            py: 5, 
+            px: 3,
+            background: 'linear-gradient(to bottom, #f9f9f9, #f5f5f5)',
+            borderRadius: 4,
+            border: '1px dashed #ccc'
             }}>
-              💰
+            <Typography variant="h5" gutterBottom sx={{ color: 'text.secondary' }}>
+                Waiting for next player...
+            </Typography>
+            <CircularProgress sx={{ mt: 2, color: 'primary.main' }} />
             </Box>
-          </Box>
-        </Grid>
-      </Grid>
-    </>
-  ) : (
-    <Box sx={{ 
-      textAlign: 'center', 
-      py: 5, 
-      px: 3,
-      background: 'linear-gradient(to bottom, #f9f9f9, #f5f5f5)',
-      borderRadius: 4,
-      border: '1px dashed #ccc'
-    }}>
-      <Typography variant="h5" gutterBottom sx={{ color: 'text.secondary' }}>
-        Waiting for next player...
-      </Typography>
-      <CircularProgress sx={{ mt: 2, color: 'primary.main' }} />
-    </Box>
-  )}
-</Paper>
+        )}
+        </Paper>
           
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>

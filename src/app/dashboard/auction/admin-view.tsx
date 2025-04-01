@@ -75,6 +75,7 @@ const mockTeams: Team[] = [
 ];
 
 const AdminAuctionView = () => {
+  // Event ID for API calls
   const [eventId, setEventId] = useState<string>('67daf7232fef49cb95788d77');
   
   const [teams, setTeams] = useState<Team[]>(mockTeams);
@@ -98,7 +99,7 @@ const AdminAuctionView = () => {
     
     setLoading(true);
     try {
-      const randomPlayer = await auctionService.getRandomPlayer(eventId, 1000, 16, 10);
+      const randomPlayer = await auctionService.getRandomPlayer(eventId);
       
       setCurrentPlayer(randomPlayer);
       setBidAmount(randomPlayer.basePrice?.toString() || '50000');
@@ -131,7 +132,7 @@ const AdminAuctionView = () => {
 
     setLoading(true);
     try {
-      const randomPlayer = await auctionService.getRandomPlayer(eventId, 1000, 16, 10);
+      const randomPlayer = await auctionService.getRandomPlayer(eventId);
       
       setCurrentPlayer(randomPlayer);
       setBidAmount(randomPlayer.basePrice?.toString() || '50000');
@@ -210,6 +211,7 @@ const AdminAuctionView = () => {
         soldAmount: amount
       };
       
+      // Update teams data
       const updatedTeams = teams.map(team => {
         if (team._id === selectedTeamId) {
           return {

@@ -11,7 +11,6 @@ export default function AuctionPage() {
   const router = useRouter();
   const { user } = useAuth();
   
-  // If no user is logged in, redirect to login
   useEffect(() => {
     if (!user) {
       router.push('/login');
@@ -26,7 +25,6 @@ export default function AuctionPage() {
     );
   }
   
-  // Render the appropriate view based on user role
   return (
     <Box sx={{ p: 2 }}>
       {(user.role === 'superAdmin' || user.role === 'eventAdmin') ? (
