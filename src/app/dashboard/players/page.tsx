@@ -486,7 +486,7 @@ export default function PlayersPage() {
           }}
           localeText={{
             MuiTablePagination: {
-              labelDisplayedRows: ({ from, to, count }) => {
+              labelDisplayedRows: ({ from, count }) => {
                 const currentPage = Math.ceil(from / 10);
                 const totalPages = Math.max(1, Math.ceil(count / 10));
                 return `Page ${currentPage} of ${totalPages}`;

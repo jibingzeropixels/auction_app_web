@@ -1,9 +1,9 @@
 // src/app/dashboard/layout.tsx
-'use client';
+"use client";
 
-import { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/auth-context';
+import { ReactNode, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/auth-context";
 import {
   AppBar,
   Box,
@@ -15,45 +15,56 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Divider,
   IconButton,
   Avatar,
   Menu,
-  MenuItem
-} from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import CalendarViewMonthIcon from '@mui/icons-material/CalendarViewMonth';
-import EventIcon from '@mui/icons-material/Event';
-import GroupsIcon from '@mui/icons-material/Groups';
-import PersonIcon from '@mui/icons-material/Person';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+  MenuItem,
+} from "@mui/material";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import CalendarViewMonthIcon from "@mui/icons-material/CalendarViewMonth";
+import EventIcon from "@mui/icons-material/Event";
+import GroupsIcon from "@mui/icons-material/Groups";
+import PersonIcon from "@mui/icons-material/Person";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 
 const drawerWidth = 240;
 
 // Define navigation items by role
 const navigationItems = {
   superAdmin: [
-    { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { name: 'Seasons', icon: <CalendarViewMonthIcon />, path: '/dashboard/seasons' },
-    { name: 'Events', icon: <EventIcon />, path: '/dashboard/events' },
-    { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
-    { name: 'Players', icon: <PersonIcon />, path: '/dashboard/players' },
-    { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
-    { name: 'Auction', icon: <EventIcon />, path: '/dashboard/auction' },
+    { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+    {
+      name: "Seasons",
+      icon: <CalendarViewMonthIcon />,
+      path: "/dashboard/seasons",
+    },
+    { name: "Events", icon: <EventIcon />, path: "/dashboard/events" },
+    { name: "Teams", icon: <GroupsIcon />, path: "/dashboard/teams" },
+    { name: "Players", icon: <PersonIcon />, path: "/dashboard/players" },
+    {
+      name: "Approvals",
+      icon: <AssignmentTurnedInIcon />,
+      path: "/dashboard/approvals",
+    },
+    { name: "Auction", icon: <EventIcon />, path: "/dashboard/auction" },
   ],
   eventAdmin: [
-    { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { name: 'My Events', icon: <EventIcon />, path: '/dashboard/events' },
-    { name: 'Teams', icon: <GroupsIcon />, path: '/dashboard/teams' },
-    { name: 'Players', icon: <PersonIcon />, path: '/dashboard/players' },
-    { name: 'Approvals', icon: <AssignmentTurnedInIcon />, path: '/dashboard/approvals' },
-    { name: 'Auction', icon: <EventIcon />, path: '/dashboard/auction' },
+    { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+    { name: "My Events", icon: <EventIcon />, path: "/dashboard/events" },
+    { name: "Teams", icon: <GroupsIcon />, path: "/dashboard/teams" },
+    { name: "Players", icon: <PersonIcon />, path: "/dashboard/players" },
+    {
+      name: "Approvals",
+      icon: <AssignmentTurnedInIcon />,
+      path: "/dashboard/approvals",
+    },
+    { name: "Auction", icon: <EventIcon />, path: "/dashboard/auction" },
   ],
   teamRepresentative: [
-    { name: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { name: 'Team', icon: <GroupsIcon />, path: '/dashboard/teams' },
-    { name: 'Auction', icon: <EventIcon />, path: '/dashboard/auction' },
-  ]
+    { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+    { name: "Team", icon: <GroupsIcon />, path: "/dashboard/teams" },
+    { name: "Auction", icon: <EventIcon />, path: "/dashboard/auction" },
+  ],
 };
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -65,13 +76,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if user exists in localStorage if not provided by context
     if (!user) {
-      const storedUser = localStorage.getItem('user');
+      const storedUser = localStorage.getItem("user");
       if (!storedUser) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
     }
-    
+
     setIsLoading(false);
   }, [user, router]);
 
@@ -86,21 +97,32 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const handleLogout = () => {
     handleMenuClose();
     logout();
-    router.push('/login');
+    router.push("/login");
   };
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <Typography>Loading...</Typography>
       </Box>
     );
   }
 
-  const userData = user || (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {});
-  
+  const userData =
+    user ||
+    (typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "{}")
+      : {});
+
   if (!userData || !userData.role) {
-    router.push('/login');
+    router.push("/login");
     return null;
   }
 
@@ -108,17 +130,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const navItems = navigationItems[userRole] || [];
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
+    <Box sx={{ display: "flex" }}>
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
+        <Toolbar sx={{ justifyContent: "space-between" }}>
           <Typography variant="h6" noWrap component="div">
             Team Bidding App
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
             <Typography variant="body1" sx={{ mr: 2 }}>
               {userData.firstName} {userData.lastName}
             </Typography>
-            <IconButton 
+            <IconButton
               onClick={handleMenuOpen}
               size="small"
               sx={{ ml: 2 }}
@@ -126,20 +151,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               aria-haspopup="true"
             >
               <Avatar sx={{ width: 32, height: 32 }}>
-                {userData.firstName?.charAt(0) || 'U'}
+                {userData.firstName?.charAt(0) || "U"}
               </Avatar>
             </IconButton>
             <Menu
               id="menu-appbar"
               anchorEl={anchorEl}
               anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
+                vertical: "top",
+                horizontal: "right",
               }}
               keepMounted
               transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
+                vertical: "top",
+                horizontal: "right",
               }}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
@@ -155,18 +180,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+          [`& .MuiDrawer-paper`]: {
+            width: drawerWidth,
+            boxSizing: "border-box",
+          },
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
+        <Box sx={{ overflow: "auto" }}>
           <List>
             {navItems.map((item) => (
               <ListItem key={item.name} disablePadding>
                 <ListItemButton onClick={() => router.push(item.path)}>
-                  <ListItemIcon>
-                    {item.icon}
-                  </ListItemIcon>
+                  <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.name} />
                 </ListItemButton>
               </ListItem>
