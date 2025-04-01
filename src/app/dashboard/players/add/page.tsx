@@ -36,7 +36,6 @@ interface FormData {
   email: string;
   phone: string;
   skills: string[];
-  basePrice: string;
   isIcon: boolean;
   eventId: string;
   seasonId: string;
@@ -54,6 +53,17 @@ interface Event {
 }
 
 const SKILLS = [
+  'Batsman',
+  'Bowler',
+  'All-rounder',
+  'Wicket Keeper',
+  'Fielder',
+  'Spinner',
+  'Fast Bowler',
+  'Medium Pacer',
+  'Opening Batsman',
+  'Middle Order Batsman',
+  'Finisher',
   'Football',
   'Cricket',
   'Badminton',
@@ -78,7 +88,6 @@ export default function AddPlayerPage() {
   
   const initialCategory = searchParams.get("category") || "";
   const initialEventId = searchParams.get("eventId") || "";
-  const initialBasePrice = searchParams.get("basePrice") || "100000";
   
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
@@ -93,7 +102,6 @@ export default function AddPlayerPage() {
     email: "",
     phone: "",
     skills: initialCategory ? [initialCategory] : [],
-    basePrice: initialBasePrice,
     isIcon: false,
     eventId: initialEventId,
     seasonId: "",
@@ -204,11 +212,6 @@ export default function AddPlayerPage() {
       return false;
     }
     
-    if (!formData.basePrice || isNaN(Number(formData.basePrice)) || Number(formData.basePrice) <= 0) {
-      setError("Please enter a valid base price");
-      return false;
-    }
-    
     if (!formData.eventId) {
       setError("Please select an event");
       return false;
@@ -237,7 +240,6 @@ export default function AddPlayerPage() {
           email: formData.email || undefined,
           phone: formData.phone || null,
           skills: formData.skills,
-          basePrice: parseInt(formData.basePrice),
           isIcon: formData.isIcon,
           eventId: formData.eventId,
         });
@@ -249,7 +251,6 @@ export default function AddPlayerPage() {
           email: formData.email || undefined,
           phone: formData.phone || null,
           skills: formData.skills,
-          basePrice: parseInt(formData.basePrice),
           isIcon: formData.isIcon,
           eventId: formData.eventId,
         });
@@ -260,7 +261,6 @@ export default function AddPlayerPage() {
           email: "",
           phone: "",
           skills: [],
-          basePrice: "100000",
           isIcon: false,
           eventId: "",
           seasonId: "",
@@ -406,19 +406,6 @@ export default function AddPlayerPage() {
               </Select>
               <FormHelperText>Select one or more skills</FormHelperText>
             </FormControl>
-
-            <TextField
-              required
-              fullWidth
-              id="basePrice"
-              name="basePrice"
-              label="Base Price (₹)"
-              type="number"
-              value={formData.basePrice}
-              onChange={handleTextChange}
-              error={error.includes("base price")}
-              InputProps={{ inputProps: { min: 0, step: 10000 } }}
-            />
 
             <FormControlLabel
               control={

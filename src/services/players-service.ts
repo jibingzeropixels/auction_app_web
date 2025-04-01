@@ -38,7 +38,6 @@ export const playersService = {
     skills: string[];
     eventId: string;
     isIcon: boolean;
-    basePrice?: number;
   }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/players/createPlayer`, {
@@ -68,7 +67,6 @@ export const playersService = {
     skills?: string[];
     eventId?: string;
     isIcon?: boolean;
-    basePrice?: number;
   }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/players/updatePlayer`, {

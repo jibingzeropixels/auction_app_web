@@ -49,7 +49,6 @@ type Player = {
   _id: string;
   name: string;
   teamId: string | null;
-  basePrice: number;
   category: string;
   status: "available" | "sold" | "unsold";
   eventId: string;
@@ -109,12 +108,14 @@ export default function PlayersPage() {
         setEvents(fetchedEvents);
         setTeams(fetchedTeams);
         
+        // Convert API players to the format needed for the UI
         const formattedPlayers: Player[] = fetchedPlayers.map(player => ({
           _id: player._id,
           name: `${player.firstName} ${player.lastName}`,
           teamId: player.teamId || null,
-          basePrice: player.basePrice || 100000,
-          category: player.skills && player.skills.length > 0 ? player.skills[0] : 'Unknown',
+          category: player.skills && player.skills.length > 0 ? 
+            (typeof player.skills[0] === 'string' ? player.skills[0] : 
+             Object.keys(player.skills[0])[0] || 'Unknown') : 'Unknown',
           status: player.soldStatus || 'available',
           eventId: player.eventId || "",
           createdAt: player.createdAt
@@ -135,7 +136,6 @@ export default function PlayersPage() {
   useEffect(() => {
     const filtered = players.filter(player => {
       const playerEvent = events.find(e => e._id === player.eventId);
-      const playerTeam = teams.find(t => t._id === player.teamId);
       
       const eventBelongsToSeason = 
         selectedSeason._id === "all" || 
@@ -200,7 +200,7 @@ export default function PlayersPage() {
     const player = players.find(p => p._id === playerId);
     if (!player) return;
     
-    router.push(`/dashboard/players/add?edit=${playerId}&name=${encodeURIComponent(player.name)}&eventId=${encodeURIComponent(player.eventId)}&basePrice=${encodeURIComponent(player.basePrice.toString())}&category=${encodeURIComponent(player.category)}`);
+    router.push(`/dashboard/players/add?edit=${playerId}&name=${encodeURIComponent(player.name)}&eventId=${encodeURIComponent(player.eventId)}&category=${encodeURIComponent(player.category)}`);
   };
 
   const handleDeleteClick = (player: Player) => {
@@ -254,15 +254,6 @@ export default function PlayersPage() {
       headerName: "Category",
       width: 130,
       headerClassName: "super-app-theme--header",
-    },
-    {
-      field: "basePrice",
-      headerName: "Base Price",
-      width: 130,
-      headerClassName: "super-app-theme--header",
-      renderCell: (params) => (
-        <span>₹{params.value.toLocaleString()}</span>
-      ),
     },
     {
       field: "status",
