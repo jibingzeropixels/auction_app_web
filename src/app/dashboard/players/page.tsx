@@ -26,6 +26,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import { seasonsService } from "@/services/seasons";
 import { eventsService } from "@/services/events";
 import { teamsService } from "@/services/teams";
+import { playersService } from "@/services/players-service";
 
 type Season = {
   _id: string;
@@ -44,7 +45,6 @@ type TeamType = {
   eventId: string;
 };
 
-// do API call later
 type Player = {
   _id: string;
   name: string;
@@ -95,83 +95,39 @@ export default function PlayersPage() {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchData() {
       try {
-        setLoading(true);
-        
-        // Fetch from API later
-        const [fetchedSeasons, fetchedEvents, fetchedTeams] = await Promise.all([
-          seasonsService.getAllSeasons(),
-          eventsService.getAllEvents(),
-          teamsService.getAllTeams(),
-        ]);
-        
+        const [fetchedSeasons, fetchedEvents, fetchedTeams, fetchedPlayers] = await Promise.all(
+          [
+            seasonsService.getAllSeasons(),
+            eventsService.getAllEvents(),
+            teamsService.getAllTeams(),
+            playersService.getAllPlayers(),
+          ]
+        );
         setSeasons(fetchedSeasons);
         setEvents(fetchedEvents);
         setTeams(fetchedTeams);
         
-        // Mock players data
-        const mockPlayers: Player[] = [
-          {
-            _id: "1",
-            name: "Virat Kohli",
-            teamId: fetchedTeams[0]?._id || null,
-            basePrice: 200000,
-            category: "Batsman",
-            status: "sold",
-            eventId: fetchedEvents[0]?._id || "",
-            createdAt: new Date().toISOString()
-          },
-          {
-            _id: "2",
-            name: "Rohit Sharma",
-            teamId: fetchedTeams[1]?._id || null,
-            basePrice: 180000,
-            category: "Batsman",
-            status: "sold",
-            eventId: fetchedEvents[0]?._id || "",
-            createdAt: new Date().toISOString()
-          },
-          {
-            _id: "3",
-            name: "Jasprit Bumrah",
-            teamId: null,
-            basePrice: 150000,
-            category: "Bowler",
-            status: "available",
-            eventId: fetchedEvents[0]?._id || "",
-            createdAt: new Date().toISOString()
-          },
-          {
-            _id: "4",
-            name: "MS Dhoni",
-            teamId: null,
-            basePrice: 220000,
-            category: "Wicket Keeper",
-            status: "available",
-            eventId: fetchedEvents[1]?._id || "",
-            createdAt: new Date().toISOString()
-          },
-          {
-            _id: "5",
-            name: "Ravindra Jadeja",
-            teamId: null,
-            basePrice: 140000,
-            category: "All-rounder",
-            status: "unsold",
-            eventId: fetchedEvents[1]?._id || "",
-            createdAt: new Date().toISOString()
-          }
-        ];
+        const formattedPlayers: Player[] = fetchedPlayers.map(player => ({
+          _id: player._id,
+          name: `${player.firstName} ${player.lastName}`,
+          teamId: player.teamId || null,
+          basePrice: player.basePrice || 100000,
+          category: player.skills && player.skills.length > 0 ? player.skills[0] : 'Unknown',
+          status: player.soldStatus || 'available',
+          eventId: player.eventId || "",
+          createdAt: player.createdAt
+        }));
         
-        setPlayers(mockPlayers);
-        setFilteredPlayers(mockPlayers);
+        setPlayers(formattedPlayers);
+        setFilteredPlayers(formattedPlayers);
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
         setLoading(false);
       }
-    };
+    }
     
     fetchData();
   }, []);
@@ -241,7 +197,10 @@ export default function PlayersPage() {
   };
 
   const handleEdit = (playerId: string) => {
-    router.push(`/dashboard/players/add?edit=${playerId}`);
+    const player = players.find(p => p._id === playerId);
+    if (!player) return;
+    
+    router.push(`/dashboard/players/add?edit=${playerId}&name=${encodeURIComponent(player.name)}&eventId=${encodeURIComponent(player.eventId)}&basePrice=${encodeURIComponent(player.basePrice.toString())}&category=${encodeURIComponent(player.category)}`);
   };
 
   const handleDeleteClick = (player: Player) => {
@@ -252,9 +211,14 @@ export default function PlayersPage() {
   const confirmDelete = async () => {
     if (selectedPlayer) {
       try {
-        console.log(`Deleting player ${selectedPlayer._id}`);
+        setLoading(true);
+        await playersService.deletePlayer(selectedPlayer._id);
         
         setPlayers(prevPlayers => 
+          prevPlayers.filter(p => p._id !== selectedPlayer._id)
+        );
+        
+        setFilteredPlayers(prevPlayers => 
           prevPlayers.filter(p => p._id !== selectedPlayer._id)
         );
         
@@ -262,6 +226,8 @@ export default function PlayersPage() {
         setSelectedPlayer(null);
       } catch (error) {
         console.error("Error deleting player:", error);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -295,7 +261,7 @@ export default function PlayersPage() {
       width: 130,
       headerClassName: "super-app-theme--header",
       renderCell: (params) => (
-        <span>${params.value.toLocaleString()}</span>
+        <span>₹{params.value.toLocaleString()}</span>
       ),
     },
     {
