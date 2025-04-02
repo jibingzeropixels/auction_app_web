@@ -46,7 +46,11 @@ const navigationItems = {
       icon: <AssignmentTurnedInIcon />,
       path: "/dashboard/approvals",
     },
-    { name: "Auction", icon: <EventIcon />, path: "/dashboard/auction" },
+    {
+      name: "Auction",
+      icon: <EventIcon />,
+      path: "/dashboard/declare-auction",
+    },
   ],
   eventAdmin: [
     { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
@@ -58,12 +62,20 @@ const navigationItems = {
       icon: <AssignmentTurnedInIcon />,
       path: "/dashboard/approvals",
     },
-    { name: "Auction", icon: <EventIcon />, path: "/dashboard/auction" },
+    {
+      name: "Auction",
+      icon: <EventIcon />,
+      path: "/dashboard/declare-auction",
+    },
   ],
   teamRepresentative: [
     { name: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
     { name: "Team", icon: <GroupsIcon />, path: "/dashboard/teams" },
-    { name: "Auction", icon: <EventIcon />, path: "/dashboard/auction" },
+    {
+      name: "Auction",
+      icon: <EventIcon />,
+      path: "/dashboard/declare-auction",
+    },
   ],
 };
 
