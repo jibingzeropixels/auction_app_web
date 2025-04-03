@@ -205,7 +205,10 @@ const DeclareAuctionPage = () => {
       }
 
       const data = await res.json();
-      router.push(`/dashboard/auction?auctionId=${data.auctionId}`);
+      // Pass auctionStatus and basePrice in the URL query params
+      router.push(
+        `/dashboard/auction?auctionId=${data.auctionId}&auctionStatus=${selectedEvent.auctionStatus}&basePrice=${basePrice}`
+      );
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error("Error declaring auction:", err.message);
@@ -233,21 +236,10 @@ const DeclareAuctionPage = () => {
   return (
     <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
       <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
+        {/* Updated heading */}
         <Typography variant="h4" align="center" sx={{ mb: 3 }}>
-          Declare Auction
+          Auctions
         </Typography>
-
-        {/* Display event details if an event is selected */}
-        {selectedEvent && (
-          <Box sx={{ mb: 2, textAlign: "center" }}>
-            <Typography variant="body1">
-              Total Teams: {totalTeams} | Total Players: {totalPlayers}
-            </Typography>
-            <Typography variant="body1">
-              Team Size: {calculateTeamSize()}
-            </Typography>
-          </Box>
-        )}
 
         {/* Form Start */}
         <Box component="form" onSubmit={handleDeclareAuction} noValidate>
@@ -302,7 +294,25 @@ const DeclareAuctionPage = () => {
                 )}
               />
             </FormControl>
-
+            {/* Display event details if an event is selected */}
+            {selectedEvent && (
+              <Box
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  backgroundColor: "grey.200", // A darker white / contrast color
+                  borderRadius: 1,
+                  textAlign: "center",
+                }}
+              >
+                <Typography variant="body1">
+                  Total Teams: {totalTeams} | Total Players: {totalPlayers}
+                </Typography>
+                <Typography variant="body1">
+                  Team Size: {calculateTeamSize()}
+                </Typography>
+              </Box>
+            )}
             {/* Conditional fields for a pending event */}
             {selectedEvent && selectedEvent.auctionStatus === "pending" && (
               <>
@@ -352,7 +362,7 @@ const DeclareAuctionPage = () => {
                 fullWidth
                 onClick={() =>
                   router.push(
-                    `/dashboard/auction?auctionId=${selectedEvent.auctionId}`
+                    `/dashboard/auction?auctionId=${selectedEvent.auctionId}&auctionStatus=${selectedEvent.auctionStatus}&basePrice=${basePrice}`
                   )
                 }
               >
