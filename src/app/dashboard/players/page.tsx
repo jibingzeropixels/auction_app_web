@@ -49,8 +49,8 @@ type Player = {
   _id: string;
   name: string;
   teamId: string | null;
-  category: string;
-  status: "available" | "sold" | "unsold";
+  skills: string[];
+  status: "available" | "sold" | "unsold" | string;
   eventId: string;
   email: string;
   createdAt: string;
@@ -119,12 +119,9 @@ export default function PlayersPage() {
           _id: player._id,
           name: `${player.firstName} ${player.lastName}`,
           teamId: player.teamId || null,
-          category:
-            player.skills && player.skills.length > 0
-              ? typeof player.skills[0] === "string"
-                ? player.skills[0]
-                : Object.keys(player.skills[0])[0] || "Unknown"
-              : "Unknown",
+          // Pass all skills (assumes player.skills is already an array)
+          skills:
+            player.skills && player.skills.length > 0 ? player.skills : [],
           status: player.soldStatus || "available",
           eventId: player.eventId || "",
           email: player.email || "",
@@ -224,8 +221,9 @@ export default function PlayersPage() {
         player.name
       )}&eventId=${encodeURIComponent(
         player.eventId
-      )}&category=${encodeURIComponent(player.category)}
-      &email=${encodeURIComponent(player.email)}`
+      )}&skills=${encodeURIComponent(
+        JSON.stringify(player.skills)
+      )}&email=${encodeURIComponent(player.email)}`
     );
   };
 
@@ -280,8 +278,8 @@ export default function PlayersPage() {
       headerClassName: "super-app-theme--header",
     },
     {
-      field: "category",
-      headerName: "Category",
+      field: "skills",
+      headerName: "skills",
       width: 130,
       headerClassName: "super-app-theme--header",
     },
@@ -290,19 +288,23 @@ export default function PlayersPage() {
       headerName: "Status",
       width: 120,
       headerClassName: "super-app-theme--header",
-      renderCell: (params) => (
-        <Chip
-          label={params.value.charAt(0).toUpperCase() + params.value.slice(1)}
-          color={
-            getStatusColor(params.value) as
-              | "primary"
-              | "success"
-              | "error"
-              | "default"
-          }
-          size="small"
-        />
-      ),
+      renderCell: (params) => {
+        // Use a default string if params.value is undefined
+        const status: string = params.value || "unknown";
+        return (
+          <Chip
+            label={status.charAt(0).toUpperCase() + status.slice(1)}
+            color={
+              getStatusColor(status) as
+                | "primary"
+                | "success"
+                | "error"
+                | "default"
+            }
+            size="small"
+          />
+        );
+      },
     },
     {
       field: "teamId",
@@ -357,12 +359,10 @@ export default function PlayersPage() {
   ];
 
   const seasonOptions = [{ _id: "all", name: "All Seasons" }, ...seasons];
-
   const eventOptions = [
     { _id: "all", name: "All Events", seasonId: "all" },
     ...events,
   ];
-
   const teamOptions = [
     { _id: "all", name: "All Teams", eventId: "all" },
     ...teams,

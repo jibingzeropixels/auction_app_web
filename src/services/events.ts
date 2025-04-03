@@ -36,6 +36,7 @@ export const eventsService = {
     desc: string;
     startDate: string;
     endDate: string;
+    skills?: string[];
     createdBy: string;
   }) => {
     try {
@@ -64,6 +65,7 @@ export const eventsService = {
     desc: string;
     startDate: string;
     endDate: string;
+    skills?: string[];
   }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/events/updateEvent`, {
