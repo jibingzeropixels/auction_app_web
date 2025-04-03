@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react"; // Added useMemo
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import {
@@ -19,14 +19,15 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  // OutlinedInput, // <-- Not used, can be removed if desired
   FormHelperText,
   Autocomplete,
-  SelectChangeEvent,
+  SelectChangeEvent, // <--- Added import
 } from "@mui/material";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { seasonsService } from "@/services/seasons";
 import { eventsService } from "@/services/events";
-import React from "react";
+import React from "react"; // Import React for ReactNode type if needed
 
 interface FormData {
   name: string;
@@ -48,6 +49,7 @@ export default function AddEventPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // --- Memoize derived search parameters ---
   const memoizedSearchParams = useMemo(() => {
     const skillsString = searchParams.get("skills") || "[]";
     let parsedSkills: string[] = [];
@@ -55,6 +57,7 @@ export default function AddEventPage() {
       parsedSkills = JSON.parse(skillsString);
     } catch (error) {
       console.error("Failed to parse skills from URL", error);
+      // Keep parsedSkills as [] on error
     }
     return {
       editEventId: searchParams.get("edit"),
@@ -63,9 +66,9 @@ export default function AddEventPage() {
       prepopulatedStartDate: (searchParams.get("startDate") || "").slice(0, 10),
       prepopulatedEndDate: (searchParams.get("endDate") || "").slice(0, 10),
       prepopulatedSeasonId: searchParams.get("seasonId") || "",
-      prepopulatedSkills: parsedSkills,
+      prepopulatedSkills: parsedSkills, // Use the stable parsed array reference
     };
-  }, [searchParams]);
+  }, [searchParams]); // Re-run only if searchParams object reference changes
 
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
@@ -84,6 +87,7 @@ export default function AddEventPage() {
 
   const [descriptionLength, setDescriptionLength] = useState<number>(0);
 
+  // --- Fetch seasons on mount ---
   useEffect(() => {
     async function fetchSeasons() {
       try {
@@ -95,9 +99,11 @@ export default function AddEventPage() {
       }
     }
     fetchSeasons();
-  }, []);
+  }, []); // Empty dependency array: runs only once on mount
 
+  // --- Pre-populate form in edit mode ---
   useEffect(() => {
+    // Destructure from the memoized object
     const {
       editEventId,
       prepopulatedName,
@@ -109,19 +115,30 @@ export default function AddEventPage() {
     } = memoizedSearchParams;
 
     if (editEventId) {
+      // Set form data using pre-populated values
+      // The conditional value logic in the Select component handles initial mismatches
       setFormData({
+        // Use direct set instead of callback if not relying on previous state here
         name: prepopulatedName,
         description: prepopulatedDesc,
         startDate: prepopulatedStartDate,
         endDate: prepopulatedEndDate,
-        seasonId: prepopulatedSeasonId,
+        seasonId: prepopulatedSeasonId, // Set the ID, Select component will validate later
         skills: prepopulatedSkills,
       });
       setDescriptionLength(prepopulatedDesc.length);
     }
-  }, [memoizedSearchParams]);
+    // Note: If navigating *away* from edit mode back to 'add' mode on the same page instance,
+    // you might need an 'else' block here to reset the form.
+    // else {
+    //   setFormData({ name: "", description: "", startDate: "", endDate: "", seasonId: "", skills: [] });
+    //   setDescriptionLength(0);
+    // }
+  }, [memoizedSearchParams]); // Depend ONLY on the memoized object
 
+  // --- Effect to validate seasonId after seasons load --- (Recommended for robustness)
   useEffect(() => {
+    // If we are in edit mode, have a seasonId, seasons are loaded, but the ID is invalid -> reset it.
     if (
       memoizedSearchParams.editEventId &&
       formData.seasonId &&
@@ -458,9 +475,10 @@ export default function AddEventPage() {
                   <TextField
                     {...params}
                     variant="outlined"
-                    label="Skills (Optional)"
+                    label="Skills (Optional)" // Clarify optionality
                     placeholder="Type a skill and press Enter"
-                    error={error.includes("skill")}
+                    // No 'required' here unless the input *must* be typed into before adding tags
+                    error={error.includes("skill")} // Reflect general skill errors if any
                   />
                 )}
               />
