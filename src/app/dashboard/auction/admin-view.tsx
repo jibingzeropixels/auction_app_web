@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Box,
@@ -35,7 +36,6 @@ import PlayerTradingCard from '@/components/PlayerTradingCard';
 import { teamsService } from '@/services/teams';
 import { auctionService } from '@/services/auction-service';
 import { ApiPlayer } from '@/types/player';
-import { useState, useEffect } from 'react';
 
 interface Team {
   _id: string;
@@ -48,7 +48,6 @@ interface Team {
 const AdminAuctionView = () => {
   const searchParams = useSearchParams();
   
-  // Event ID and Auction ID for API calls
   const [eventId, setEventId] = useState<string>('67daf7232fef49cb95788d77');
   const [auctionId, setAuctionId] = useState<string>('');
   
@@ -62,12 +61,11 @@ const AdminAuctionView = () => {
   const [success, setSuccess] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [teamsLoading, setTeamsLoading] = useState<boolean>(true);
-  const [auctionStatus, setAuctionStatus] = useState<'ready' | 'live' | 'paused' | 'completed'>('ready');
+  const [auctionStatus, setAuctionStatus] = useState<'ready' | 'active' | 'paused' | 'completed'>('ready');
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
   const [processedPlayerCount, setProcessedPlayerCount] = useState<number>(0);
 
   useEffect(() => {
-    // Get auctionId from URL query parameter
     const urlAuctionId = searchParams.get('auctionId');
     if (urlAuctionId) {
       setAuctionId(urlAuctionId);
@@ -85,8 +83,8 @@ const AdminAuctionView = () => {
         const formattedTeams: Team[] = fetchedTeams.map((team: any) => ({
           _id: team._id,
           name: team.name,
-          totalBudget: 1000000, // Default budget
-          remainingBudget: 1000000, // Initially full budget
+          totalBudget: 1000000,
+          remainingBudget: 1000000,
           players: []
         }));
         
@@ -119,7 +117,7 @@ const AdminAuctionView = () => {
       
       setCurrentPlayer(randomPlayer);
       setBidAmount(randomPlayer.basePrice?.toString() || '50000');
-      setAuctionStatus('live');
+      setAuctionStatus('active');
       setError('');
       setSuccess('Auction started');
     } catch (err) {
@@ -136,7 +134,7 @@ const AdminAuctionView = () => {
   };
 
   const resumeAuction = () => {
-    setAuctionStatus('live');
+    setAuctionStatus('active');
     setSuccess('Auction resumed');
   };
 
@@ -170,7 +168,6 @@ const AdminAuctionView = () => {
   };
 
   const restartAuction = () => {
-    // Reset teams to their initial state
     const resetTeams = teams.map(team => ({
       ...team,
       remainingBudget: team.totalBudget,
@@ -238,7 +235,6 @@ const AdminAuctionView = () => {
     try {
       const amount = parseInt(bidAmount);
       
-      // Call the API to record the purchase
       await auctionService.purchasePlayer({
         auctionId,
         playerId: currentPlayer._id,
@@ -246,7 +242,6 @@ const AdminAuctionView = () => {
         soldPrice: amount
       });
       
-      // Update player status in our local state
       const updatedPlayer = {
         ...currentPlayer,
         soldStatus: 'sold' as const,
@@ -254,7 +249,6 @@ const AdminAuctionView = () => {
         soldAmount: amount
       };
       
-      // Update teams data
       const updatedTeams = teams.map(team => {
         if (team._id === selectedTeamId) {
           return {
@@ -266,64 +260,94 @@ const AdminAuctionView = () => {
         return team;
       });
       
-      // Update state
       setTeams(updatedTeams);
       setSoldPlayers([...soldPlayers, updatedPlayer]);
       setCurrentPlayer(null);
       setProcessedPlayerCount(prev => prev + 1);
       setSuccess(`${updatedPlayer.firstName} ${updatedPlayer.lastName} sold to ${teams.find(t => t._id === selectedTeamId)?.name} for ₹${amount.toLocaleString()}`);
       
-      // Reset form
       setBidAmount('');
       setSelectedTeamId('');
       
-      // If auction is live, automatically fetch next player after a delay
-      if (auctionStatus === 'live') {
-        setTimeout(() => {
-          nextPlayer();
+      if (auctionStatus === 'active') {
+        setTimeout(async () => {
+          try {
+            const randomPlayer = await auctionService.getRandomPlayer(eventId);
+            setCurrentPlayer(randomPlayer);
+            setBidAmount(randomPlayer.basePrice?.toString() || '50000');
+            setSelectedTeamId('');
+          } catch (err) {
+            console.error('Error fetching next player:', err);
+            setError('Failed to fetch next player. Please try again.');
+          } finally {
+            setLoading(false);
+          }
         }, 1500);
+      } else {
+        setLoading(false);
       }
     } catch (err) {
       console.error('Error selling player:', err);
       setError('Failed to process player sale');
-    } finally {
       setLoading(false);
-      setConfirmDialogOpen(false);
     }
+    
+    setConfirmDialogOpen(false);
   };
 
   const handleMarkUnsold = async () => {
     if (!currentPlayer) return;
+    
+    if (!auctionId) {
+      setError('No auction ID provided');
+      return;
+    }
+    
+    if (!eventId) {
+      setError('No event ID provided');
+      return;
+    }
 
     setLoading(true);
     
     try {
-      // Update player status in our local state
       const updatedPlayer = {
         ...currentPlayer,
         soldStatus: 'unsold' as const
       };
       
-      // Update state
       setSoldPlayers([...soldPlayers, updatedPlayer]);
       setCurrentPlayer(null);
       setProcessedPlayerCount(prev => prev + 1);
       setSuccess(`${updatedPlayer.firstName} ${updatedPlayer.lastName} marked as unsold`);
       
-      // Reset form
       setBidAmount('');
       setSelectedTeamId('');
       
-      // If auction is live, automatically fetch next player after a delay
-      if (auctionStatus === 'live') {
-        setTimeout(() => {
-          nextPlayer();
+      if (auctionStatus === 'active') {
+        setTimeout(async () => {
+          try {
+            const randomPlayer = await auctionService.getRandomPlayer(eventId, {
+              skipped: true,
+              playerId: updatedPlayer._id
+            });
+            
+            setCurrentPlayer(randomPlayer);
+            setBidAmount(randomPlayer.basePrice?.toString() || '50000');
+            setSelectedTeamId('');
+          } catch (err) {
+            console.error('Error fetching next player:', err);
+            setError('Failed to fetch next player. Please try again.');
+          } finally {
+            setLoading(false);
+          }
         }, 1500);
+      } else {
+        setLoading(false);
       }
     } catch (err) {
       console.error('Error marking player as unsold:', err);
       setError('Failed to mark player as unsold');
-    } finally {
       setLoading(false);
     }
   };
@@ -358,7 +382,7 @@ const AdminAuctionView = () => {
           </Button>
         )}
         
-        {auctionStatus === 'live' && (
+        {auctionStatus === 'active' && (
           <Button 
             variant="outlined" 
             color="primary"
@@ -380,17 +404,6 @@ const AdminAuctionView = () => {
           </Button>
         )}
         
-        {(auctionStatus === 'live' || auctionStatus === 'paused') && (
-          <Button 
-            variant="outlined"
-            startIcon={<SkipNextIcon />}
-            onClick={nextPlayer}
-            disabled={loading}
-          >
-            Next Player
-          </Button>
-        )}
-        
         <Button 
           variant="outlined"
           color="warning"
@@ -406,7 +419,7 @@ const AdminAuctionView = () => {
           label={`Auction ${auctionStatus.toUpperCase()}`} 
           color={
             auctionStatus === 'ready' ? 'default' : 
-            auctionStatus === 'live' ? 'success' : 
+            auctionStatus === 'active' ? 'success' : 
             auctionStatus === 'paused' ? 'warning' : 
             'error'
           }
@@ -455,7 +468,7 @@ const AdminAuctionView = () => {
                           value={selectedTeamId}
                           label="Winning Team"
                           onChange={handleSelectTeam}
-                          disabled={auctionStatus !== 'live' || teams.length === 0}
+                          disabled={auctionStatus !== 'active' || teams.length === 0}
                         >
                           <MenuItem value="">
                             <em>Select a team</em>
@@ -466,7 +479,7 @@ const AdminAuctionView = () => {
                               value={team._id}
                               disabled={team.remainingBudget < parseInt(bidAmount || '0')}
                             >
-                              {team.name} (₹{team.remainingBudget.toLocaleString()} left)
+                              {team.name}
                             </MenuItem>
                           ))}
                         </Select>
@@ -485,7 +498,7 @@ const AdminAuctionView = () => {
                         }}
                         error={error.includes('bid amount')}
                         helperText={selectedTeamId ? `Max: ₹${calculateMaxBid(selectedTeamId).toLocaleString()}` : ''}
-                        disabled={auctionStatus !== 'live'}
+                        disabled={auctionStatus !== 'active'}
                       />
                     </Box>
                     
@@ -494,7 +507,7 @@ const AdminAuctionView = () => {
                         variant="contained" 
                         color="primary" 
                         onClick={handleOpenConfirmDialog}
-                        disabled={!selectedTeamId || !bidAmount || auctionStatus !== 'live'}
+                        disabled={!selectedTeamId || !bidAmount || auctionStatus !== 'active'}
                         size="large"
                         sx={{ 
                           px: 4, 
@@ -510,7 +523,7 @@ const AdminAuctionView = () => {
                         variant="outlined" 
                         color="error" 
                         onClick={handleMarkUnsold}
-                        disabled={auctionStatus !== 'live' || !currentPlayer}
+                        disabled={auctionStatus !== 'active' || !currentPlayer}
                         size="large"
                         sx={{ 
                           borderRadius: 2,

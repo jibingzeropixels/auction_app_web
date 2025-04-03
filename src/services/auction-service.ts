@@ -11,9 +11,16 @@ const getAuthHeaders = () => {
 };
 
 export const auctionService = {
-  getRandomPlayer: async (eventId: string): Promise<ApiPlayer> => {
+  getRandomPlayer: async (eventId: string, options?: { skipped?: boolean; playerId?: string }): Promise<ApiPlayer> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auctions/getRandomPlayers?eventId=${eventId}`, {
+      let url = `${API_BASE_URL}/auctions/getRandomPlayers?eventId=${eventId}`;
+      
+      // Add skipped and playerId parameters if provided
+      if (options?.skipped && options?.playerId) {
+        url += `&skipped=true&playerId=${options.playerId}`;
+      }
+      
+      const response = await fetch(url, {
         method: "GET",
         headers: getAuthHeaders(),
       });
