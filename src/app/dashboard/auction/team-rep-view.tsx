@@ -108,7 +108,7 @@ const TeamRepAuctionView = () => {
   const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [soldPlayers, setSoldPlayers] = useState<Player[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-  const [auctionStatus, setAuctionStatus] = useState<'ready' | 'active' | 'paused' | 'completed'>('active');
+  const [auctionStatus, setAuctionStatus] = useState<'ready' | 'live' | 'paused' | 'completed'>('live');
   
   const userTeam = teams.find(team => team._id === user?.teamId) || teams[0]; 
   
@@ -168,7 +168,7 @@ const TeamRepAuctionView = () => {
           label={auctionStatus.toUpperCase()} 
           color={
             auctionStatus === 'ready' ? 'default' : 
-            auctionStatus === 'active' ? 'success' : 
+            auctionStatus === 'live' ? 'success' : 
             auctionStatus === 'paused' ? 'warning' : 
             'error'
           }

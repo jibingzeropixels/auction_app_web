@@ -61,7 +61,7 @@ const AdminAuctionView = () => {
   const [success, setSuccess] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [teamsLoading, setTeamsLoading] = useState<boolean>(true);
-  const [auctionStatus, setAuctionStatus] = useState<'ready' | 'active' | 'paused' | 'completed'>('ready');
+  const [auctionStatus, setAuctionStatus] = useState<'ready' | 'live' | 'paused' | 'completed'>('ready');
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
   const [processedPlayerCount, setProcessedPlayerCount] = useState<number>(0);
 
@@ -83,8 +83,8 @@ const AdminAuctionView = () => {
         const formattedTeams: Team[] = fetchedTeams.map((team: any) => ({
           _id: team._id,
           name: team.name,
-          totalBudget: 1000000,
-          remainingBudget: 1000000,
+          totalBudget: 1000000, 
+          remainingBudget: 1000000, 
           players: []
         }));
         
@@ -117,7 +117,7 @@ const AdminAuctionView = () => {
       
       setCurrentPlayer(randomPlayer);
       setBidAmount(randomPlayer.basePrice?.toString() || '50000');
-      setAuctionStatus('active');
+      setAuctionStatus('live');
       setError('');
       setSuccess('Auction started');
     } catch (err) {
@@ -134,7 +134,7 @@ const AdminAuctionView = () => {
   };
 
   const resumeAuction = () => {
-    setAuctionStatus('active');
+    setAuctionStatus('live');
     setSuccess('Auction resumed');
   };
 
@@ -269,7 +269,7 @@ const AdminAuctionView = () => {
       setBidAmount('');
       setSelectedTeamId('');
       
-      if (auctionStatus === 'active') {
+      if (auctionStatus === 'live') {
         setTimeout(async () => {
           try {
             const randomPlayer = await auctionService.getRandomPlayer(eventId);
@@ -324,7 +324,7 @@ const AdminAuctionView = () => {
       setBidAmount('');
       setSelectedTeamId('');
       
-      if (auctionStatus === 'active') {
+      if (auctionStatus === 'live') {
         setTimeout(async () => {
           try {
             const randomPlayer = await auctionService.getRandomPlayer(eventId, {
@@ -382,7 +382,7 @@ const AdminAuctionView = () => {
           </Button>
         )}
         
-        {auctionStatus === 'active' && (
+        {auctionStatus === 'live' && (
           <Button 
             variant="outlined" 
             color="primary"
@@ -410,7 +410,7 @@ const AdminAuctionView = () => {
           startIcon={<ReplayIcon />}
           onClick={restartAuction}
           sx={{ ml: 'auto' }}
-          disabled={teamsLoading}
+          disabled={teamsLoading || loading}
         >
           Reset Auction
         </Button>
@@ -419,7 +419,7 @@ const AdminAuctionView = () => {
           label={`Auction ${auctionStatus.toUpperCase()}`} 
           color={
             auctionStatus === 'ready' ? 'default' : 
-            auctionStatus === 'active' ? 'success' : 
+            auctionStatus === 'live' ? 'success' : 
             auctionStatus === 'paused' ? 'warning' : 
             'error'
           }
@@ -468,7 +468,7 @@ const AdminAuctionView = () => {
                           value={selectedTeamId}
                           label="Winning Team"
                           onChange={handleSelectTeam}
-                          disabled={auctionStatus !== 'active' || teams.length === 0}
+                          disabled={auctionStatus !== 'live' || teams.length === 0}
                         >
                           <MenuItem value="">
                             <em>Select a team</em>
@@ -479,7 +479,7 @@ const AdminAuctionView = () => {
                               value={team._id}
                               disabled={team.remainingBudget < parseInt(bidAmount || '0')}
                             >
-                              {team.name}
+                              {team.name} (₹{team.remainingBudget.toLocaleString()} left)
                             </MenuItem>
                           ))}
                         </Select>
@@ -498,7 +498,7 @@ const AdminAuctionView = () => {
                         }}
                         error={error.includes('bid amount')}
                         helperText={selectedTeamId ? `Max: ₹${calculateMaxBid(selectedTeamId).toLocaleString()}` : ''}
-                        disabled={auctionStatus !== 'active'}
+                        disabled={auctionStatus !== 'live'}
                       />
                     </Box>
                     
@@ -507,7 +507,7 @@ const AdminAuctionView = () => {
                         variant="contained" 
                         color="primary" 
                         onClick={handleOpenConfirmDialog}
-                        disabled={!selectedTeamId || !bidAmount || auctionStatus !== 'active'}
+                        disabled={!selectedTeamId || !bidAmount || auctionStatus !== 'live'}
                         size="large"
                         sx={{ 
                           px: 4, 
@@ -523,7 +523,7 @@ const AdminAuctionView = () => {
                         variant="outlined" 
                         color="error" 
                         onClick={handleMarkUnsold}
-                        disabled={auctionStatus !== 'active' || !currentPlayer}
+                        disabled={auctionStatus !== 'live' || !currentPlayer}
                         size="large"
                         sx={{ 
                           borderRadius: 2,
@@ -556,17 +556,6 @@ const AdminAuctionView = () => {
                     "No player currently on auction"
                   }
                 </Typography>
-                {auctionStatus === 'ready' && !teamsLoading && teams.length > 0 && (
-                  <Button 
-                    variant="contained" 
-                    color="primary"
-                    onClick={startAuction}
-                    disabled={loading}
-                    sx={{ mt: 2 }}
-                  >
-                    Start Auction
-                  </Button>
-                )}
                 {teamsLoading && (
                   <CircularProgress sx={{ mt: 2 }} />
                 )}

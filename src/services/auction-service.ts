@@ -15,7 +15,6 @@ export const auctionService = {
     try {
       let url = `${API_BASE_URL}/auctions/getRandomPlayers?eventId=${eventId}`;
       
-      // Add skipped and playerId parameters if provided
       if (options?.skipped && options?.playerId) {
         url += `&skipped=true&playerId=${options.playerId}`;
       }
@@ -60,5 +59,29 @@ export const auctionService = {
       console.error("Error purchasing player:", error);
       throw error;
     }
+  },
+
+  resetAuction: async (auctionId: string): Promise<any> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auctions/resetAuction`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          auctionId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to reset auction");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error resetting auction:", error);
+      throw error;
+    }
   }
 };
+
+
