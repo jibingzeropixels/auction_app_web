@@ -31,10 +31,10 @@ export const auctionService = {
   },
 
   purchasePlayer: async (purchaseData: {
-    playerId: string;
+    auctionId: string;
     teamId: string;
-    amount: number;
-    eventId: string;
+    playerId: string;
+    soldPrice: number;
   }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auctions/purchase`, {
