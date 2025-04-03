@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import {
@@ -19,11 +19,11 @@ import {
   Select,
   MenuItem,
   Chip,
-  OutlinedInput,
-  SelectChangeEvent,
   FormHelperText,
   Switch,
   FormControlLabel,
+  Autocomplete,
+  SelectChangeEvent,
 } from "@mui/material";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 import { seasonsService } from "@/services/seasons";
@@ -40,55 +40,57 @@ interface FormData {
   eventId: string;
   seasonId: string;
 }
-
 interface Season {
   _id: string;
   name: string;
 }
-
 interface Event {
   _id: string;
   name: string;
   seasonId: string;
 }
 
-const SKILLS = [
-  "Batsman",
-  "Bowler",
-  "All-rounder",
-  "Wicket Keeper",
-  "Fielder",
-  "Spinner",
-  "Fast Bowler",
-  "Medium Pacer",
-  "Opening Batsman",
-  "Middle Order Batsman",
-  "Finisher",
-  "Football",
-  "Cricket",
-  "Badminton",
-  "Table-Tennis",
-  "Swimming",
-  "Dancing",
-  "Singing",
-  "Foosball",
-  "Carroms",
-  "Chess",
-];
-
 export default function AddPlayerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const editPlayerId = searchParams.get("edit");
 
-  const playerName = searchParams.get("name") || "";
-  const nameParts = playerName.split(" ");
-  const initialFirstName = nameParts[0] || "";
-  const initialLastName = nameParts.slice(1).join(" ") || "";
+  // Check if individual firstName/lastName exist; otherwise, parse from a "name" query parameter.
+  let initialFirstName = searchParams.get("firstName") || "";
+  let initialLastName = searchParams.get("lastName") || "";
+  const nameParam = searchParams.get("name");
+  if (nameParam && !initialFirstName && !initialLastName) {
+    const parts = nameParam.split(" ");
+    initialFirstName = parts[0] || "";
+    initialLastName = parts.slice(1).join(" ") || "";
+  }
 
-  const initialCategory = searchParams.get("category") || "";
   const initialEventId = searchParams.get("eventId") || "";
   const initialEmail = searchParams.get("email") || "";
+
+  // Parse skills from the URL query parameter.
+  const initialSkills = useMemo(() => {
+    const skillsParam = searchParams.get("skills");
+    if (skillsParam) {
+      try {
+        // Check if the skills parameter starts with '[' indicating a JSON array.
+        if (skillsParam.trim().startsWith("[")) {
+          const parsedSkills = JSON.parse(decodeURIComponent(skillsParam));
+          if (
+            Array.isArray(parsedSkills) &&
+            parsedSkills.every((item) => typeof item === "string")
+          ) {
+            return parsedSkills;
+          }
+        } else {
+          // If not a JSON array, treat it as a single skill string.
+          return [skillsParam];
+        }
+      } catch (e) {
+        console.error("Failed to parse skills JSON from URL:", e);
+      }
+    }
+    return [];
+  }, [searchParams]);
 
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
@@ -101,53 +103,59 @@ export default function AddPlayerPage() {
     firstName: initialFirstName,
     lastName: initialLastName,
     email: initialEmail,
-    phone: "",
-    skills: initialCategory ? [initialCategory] : [],
+    phone: searchParams.get("phone") || "",
+    skills: initialSkills, // Prepopulate skills here
     isIcon: false,
     eventId: initialEventId,
     seasonId: "",
   });
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
       try {
-        const seasonsData = await seasonsService.getAllSeasons();
-        setSeasons(seasonsData);
-        const eventsData = await eventsService.getAllEvents();
-        setEvents(eventsData);
+        const [seasonsData, eventsData] = await Promise.all([
+          seasonsService.getAllSeasons(),
+          eventsService.getAllEvents(),
+        ]);
 
-        if (initialEventId) {
-          const event = eventsData.find(
-            (event: Event) => event._id === initialEventId
-          );
-          if (event) {
-            setFormData((prev) => ({
-              ...prev,
-              seasonId: event.seasonId,
-            }));
+        if (isMounted) {
+          setSeasons(seasonsData);
+          setEvents(eventsData);
+
+          const targetEventId = initialEventId || formData.eventId;
+          if (targetEventId) {
+            const foundEvent = eventsData.find(
+              (ev: Event) => ev._id === targetEventId
+            );
+            if (foundEvent) {
+              setFormData((prev) => ({
+                ...prev,
+                seasonId: foundEvent.seasonId,
+                eventId: foundEvent._id,
+              }));
+            } else {
+              console.warn(`EventId "${targetEventId}" not found.`);
+            }
           }
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching seasons/events:", err);
+        if (isMounted) {
+          setError("Failed to load season/event data.");
+        }
       }
     }
     fetchData();
-  }, [initialEventId]);
+    return () => {
+      isMounted = false;
+    };
+  }, [initialEventId, formData.eventId]);
 
   if (user?.role !== "superAdmin" && user?.role !== "eventAdmin") {
     return (
       <Box sx={{ p: 3 }}>
-        <Typography variant="h6">
-          You don&apos;t have permission to access this page.
-        </Typography>
-
-        <Button
-          variant="contained"
-          onClick={() => router.push("/dashboard")}
-          sx={{ mt: 2 }}
-        >
-          Return to Dashboard
-        </Button>
+        <Typography variant="h6">Permission Denied.</Typography>
       </Box>
     );
   }
@@ -156,107 +164,87 @@ export default function AddPlayerPage() {
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // For select dropdowns with single selection (string value)
-  const handleSelectChange = (event: SelectChangeEvent) => {
+  const handleSelectChange = (
+    event: SelectChangeEvent<string>,
+    child: React.ReactNode
+  ) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => {
+      const newState = { ...prev, [name]: value };
+      if (name === "seasonId") {
+        newState.eventId = "";
+      }
+      return newState;
+    });
   };
 
-  // For multi-select (skills array)
-  const handleSkillsChange = (event: SelectChangeEvent<string[]>) => {
-    const { value } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      skills: typeof value === "string" ? value.split(",") : value,
-    }));
+  const handleSkillsChange = (
+    _event: React.SyntheticEvent,
+    newValue: string[]
+  ) => {
+    setFormData((prev) => ({ ...prev, skills: newValue }));
   };
 
-  // For switch/checkbox
   const handleSwitchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = event.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: checked }));
   };
 
   const validateForm = (): boolean => {
+    setError("");
     if (!formData.firstName.trim()) {
       setError("First name is required");
       return false;
     }
-
     if (!formData.lastName.trim()) {
       setError("Last name is required");
       return false;
     }
-
-    if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
-      setError("Please enter a valid email address");
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setError("Valid email is required");
       return false;
     }
-
     if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
-      setError("Please enter a valid 10-digit phone number");
+      setError("Enter 10 digits for phone (if provided)");
       return false;
     }
-
     if (!formData.skills.length) {
-      setError("Please select at least one skill");
+      setError("At least one skill is required");
       return false;
     }
-
     if (!formData.eventId) {
-      setError("Please select an event");
+      setError("Event selection is required");
       return false;
     }
-
     return true;
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError("");
     setSuccess("");
-
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     setLoading(true);
-
+    const playerData = {
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone || null,
+      skills: formData.skills,
+      isIcon: formData.isIcon,
+      eventId: formData.eventId,
+    };
     try {
-      if (editPlayerId) {
+      if (searchParams.get("edit")) {
         await playersService.updatePlayer({
-          playerId: editPlayerId,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone || null,
-          skills: formData.skills,
-          isIcon: formData.isIcon,
-          eventId: formData.eventId,
+          playerId: searchParams.get("edit") as string,
+          ...playerData,
         });
         setSuccess("Player updated successfully");
       } else {
-        await playersService.createPlayer({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone || null,
-          skills: formData.skills,
-          isIcon: formData.isIcon,
-          eventId: formData.eventId,
-        });
+        await playersService.createPlayer(playerData);
         setSuccess("Player created successfully");
         setFormData({
           firstName: "",
@@ -269,13 +257,12 @@ export default function AddPlayerPage() {
           seasonId: "",
         });
       }
-
       setTimeout(() => {
         router.push("/dashboard/players");
-      }, 2000);
+      }, 1500);
     } catch (err: unknown) {
-      console.error("Error:", err);
-      setError("Failed to save player. Please try again.");
+      console.error("Error saving player:", err);
+      setError(err instanceof Error ? err.message : "Failed to save player.");
     } finally {
       setLoading(false);
     }
@@ -293,52 +280,68 @@ export default function AddPlayerPage() {
     router.push(path);
   };
 
+  // Filter events by the selected season.
   const filteredEvents = formData.seasonId
-    ? events.filter((event) => event.seasonId === formData.seasonId)
-    : events;
+    ? events.filter((ev) => ev?._id && ev.seasonId === formData.seasonId)
+    : [];
+
+  // If the current eventId isn’t among the filtered events, force value to an empty string.
+  const currentEventValue =
+    formData.eventId &&
+    filteredEvents.some((evt) => evt._id === formData.eventId)
+      ? formData.eventId
+      : "";
 
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mb: 4 }}>
+    <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ mb: 3 }}>
         <Breadcrumbs
           separator={<NavigateNextIcon fontSize="small" />}
           aria-label="breadcrumb"
         >
           <Link
+            underline="hover"
             color="inherit"
             href="/dashboard/players"
-            onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) =>
-              handleLinkClick(event, "/dashboard/players")
-            }
+            onClick={(e) => handleLinkClick(e, "/dashboard/players")}
           >
             Players
           </Link>
           <Typography color="text.primary">
-            {editPlayerId ? "Edit Player" : "Add Player"}
+            {searchParams.get("edit") ? "Edit Player" : "Add Player"}
           </Typography>
         </Breadcrumbs>
       </Box>
 
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h5" component="h1" gutterBottom>
-          {editPlayerId ? "Edit Player" : "Add New Player"}
+      <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
+        <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 3 }}>
+          {searchParams.get("edit") ? "Edit Player" : "Add New Player"}
         </Typography>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError("")}>
             {error}
           </Alert>
         )}
-
         {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
+          <Alert
+            severity="success"
+            sx={{ mb: 3 }}
+            onClose={() => setSuccess("")}
+          >
             {success}
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box component="form" onSubmit={handleSubmit} noValidate>
           <Stack spacing={3}>
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <TextField
                 required
                 fullWidth
@@ -348,8 +351,8 @@ export default function AddPlayerPage() {
                 value={formData.firstName}
                 onChange={handleTextChange}
                 error={error.includes("First name")}
+                disabled={loading}
               />
-
               <TextField
                 required
                 fullWidth
@@ -359,9 +362,9 @@ export default function AddPlayerPage() {
                 value={formData.lastName}
                 onChange={handleTextChange}
                 error={error.includes("Last name")}
+                disabled={loading}
               />
             </Box>
-
             <TextField
               required
               fullWidth
@@ -372,46 +375,67 @@ export default function AddPlayerPage() {
               value={formData.email}
               onChange={handleTextChange}
               error={error.includes("email")}
+              disabled={loading}
             />
-
             <TextField
               fullWidth
               id="phone"
               name="phone"
               label="Phone Number"
+              type="tel"
               value={formData.phone}
               onChange={handleTextChange}
               error={error.includes("phone")}
-              helperText="Optional, 10 digits"
+              helperText={
+                error.includes("phone")
+                  ? "Invalid (10 digits required)"
+                  : "Optional, 10 digits"
+              }
+              disabled={loading}
             />
 
-            <FormControl fullWidth required error={error.includes("skill")}>
-              <InputLabel id="skills-label">Skills</InputLabel>
-              <Select
-                labelId="skills-label"
-                id="skills"
-                name="skills"
+            {/* Skills Autocomplete field is now prepopulated with initialSkills */}
+            <FormControl fullWidth error={error.includes("skill")}>
+              <Autocomplete
                 multiple
+                freeSolo
+                options={[]}
                 value={formData.skills}
                 onChange={handleSkillsChange}
-                input={
-                  <OutlinedInput id="select-multiple-skills" label="Skills" />
+                disabled={loading}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      label={option}
+                      {...getTagProps({ index })}
+                      key={`${option}-${index}`}
+                      sx={{
+                        bgcolor: "silver",
+                        color: "#333",
+                        m: 0.5,
+                        "& .MuiChip-deleteIcon": {
+                          color: "#555",
+                          "&:hover": { color: "#222" },
+                        },
+                      }}
+                    />
+                  ))
                 }
-                renderValue={(selected) => (
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip key={value} label={value} />
-                    ))}
-                  </Box>
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="outlined"
+                    label="Skills"
+                    placeholder="Type skill & press Enter"
+                    error={error.includes("skill")}
+                  />
                 )}
-              >
-                {SKILLS.map((skill) => (
-                  <MenuItem key={skill} value={skill}>
-                    {skill}
-                  </MenuItem>
-                ))}
-              </Select>
-              <FormHelperText>Select one or more skills</FormHelperText>
+              />
+              <FormHelperText error={error.includes("skill")}>
+                {error.includes("skill")
+                  ? "At least one skill required"
+                  : "Type skill & press Enter. Click 'X' to remove."}
+              </FormHelperText>
             </FormControl>
 
             <FormControlLabel
@@ -421,22 +445,29 @@ export default function AddPlayerPage() {
                   onChange={handleSwitchChange}
                   name="isIcon"
                   color="primary"
+                  disabled={loading}
                 />
               }
               label="Icon Player (Featured)"
+              sx={{ justifyContent: "flex-start" }}
             />
 
-            <FormControl fullWidth required>
-              <InputLabel id="season-label">Season</InputLabel>
+            <FormControl
+              fullWidth
+              required
+              error={!formData.seasonId && error.includes("event")}
+            >
+              <InputLabel id="season-label">Season *</InputLabel>
               <Select
                 labelId="season-label"
                 id="seasonId"
                 name="seasonId"
                 value={formData.seasonId}
-                label="Season"
+                label="Season *"
                 onChange={handleSelectChange}
+                disabled={loading}
               >
-                <MenuItem value="">
+                <MenuItem value="" disabled>
                   <em>Select a Season</em>
                 </MenuItem>
                 {seasons.map((season) => (
@@ -448,28 +479,43 @@ export default function AddPlayerPage() {
             </FormControl>
 
             <FormControl fullWidth required error={error.includes("event")}>
-              <InputLabel id="event-label">Event</InputLabel>
+              <InputLabel id="event-label">Event *</InputLabel>
               <Select
                 labelId="event-label"
                 id="eventId"
                 name="eventId"
-                value={formData.eventId}
-                label="Event"
+                value={currentEventValue}
+                label="Event *"
                 onChange={handleSelectChange}
-                disabled={!formData.seasonId}
+                disabled={
+                  loading || !formData.seasonId || filteredEvents.length === 0
+                }
               >
-                <MenuItem value="">
-                  <em>Select an Event</em>
+                <MenuItem value="" disabled>
+                  <em>
+                    {formData.seasonId
+                      ? "Select an Event"
+                      : "Select Season first"}
+                  </em>
                 </MenuItem>
-                {filteredEvents.map((event) => (
-                  <MenuItem key={event._id} value={event._id}>
-                    {event.name}
+                {filteredEvents.map((evt) => (
+                  <MenuItem key={evt._id} value={evt._id}>
+                    {evt.name}
                   </MenuItem>
                 ))}
+                {formData.seasonId && filteredEvents.length === 0 && (
+                  <MenuItem value="" disabled>
+                    <em>No events for this season</em>
+                  </MenuItem>
+                )}
               </Select>
-              {!formData.seasonId && (
-                <FormHelperText>Please select a season first</FormHelperText>
-              )}
+              <FormHelperText error={error.includes("event")}>
+                {error.includes("event")
+                  ? "Event required"
+                  : !formData.seasonId
+                  ? "Select season first"
+                  : ""}
+              </FormHelperText>
             </FormControl>
 
             <Box
@@ -483,6 +529,7 @@ export default function AddPlayerPage() {
               <Button
                 variant="outlined"
                 onClick={handleCancel}
+                disabled={loading}
                 sx={{ minWidth: "100px" }}
               >
                 Cancel
@@ -492,13 +539,13 @@ export default function AddPlayerPage() {
                 variant="contained"
                 color="primary"
                 disabled={loading}
-                sx={{ minWidth: "100px" }}
+                sx={{ minWidth: "120px" }}
               >
                 {loading
-                  ? editPlayerId
+                  ? searchParams.get("edit")
                     ? "Updating..."
                     : "Creating..."
-                  : editPlayerId
+                  : searchParams.get("edit")
                   ? "Update Player"
                   : "Add Player"}
               </Button>
