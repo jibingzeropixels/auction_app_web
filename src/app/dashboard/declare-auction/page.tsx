@@ -165,7 +165,7 @@ const DeclareAuctionPage = () => {
     const ceilSize = Math.ceil(size);
     return floorSize === ceilSize
       ? `${floorSize}`
-      : `${floorSize} to ${ceilSize}`;
+      : `${floorSize} - ${ceilSize}`;
   };
 
   const handleSeasonChange = (_: any, value: Season | null) => {
