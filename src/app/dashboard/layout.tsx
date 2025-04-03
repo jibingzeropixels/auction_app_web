@@ -74,7 +74,7 @@ const navigationItems = {
     {
       name: "Auction",
       icon: <EventIcon />,
-      path: "/dashboard/declare-auction",
+      path: "/dashboard/select-auction",
     },
   ],
 };
