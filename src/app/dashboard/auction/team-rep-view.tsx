@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Box,
   Typography,
@@ -17,6 +18,8 @@ import {
 } from '@mui/material';
 import PlayerTradingCard from '@/components/PlayerTradingCard';
 import { useAuth } from '@/context/auth-context';
+import { auctionService } from '@/services/auction-service';
+import { ApiPlayer } from '@/types/player';
 
 interface Team {
   _id: string;
@@ -70,47 +73,67 @@ const mockTeams: Team[] = [
   }
 ];
 
-const mockPlayers: Player[] = [
-  {
-    _id: 'p1',
-    name: 'Virat Kohli',
-    basePrice: 200000,
-    category: 'Batsman',
-    status: 'available',
-    battingSkill: 9,
-    bowlingSkill: 3,
-    fieldingSkill: 8
-  },
-  {
-    _id: 'p2',
-    name: 'MS Dhoni',
-    basePrice: 180000,
-    category: 'Wicket Keeper',
-    status: 'available',
-    battingSkill: 8,
-    bowlingSkill: 2,
-    fieldingSkill: 9
-  },
-  {
-    _id: 'p3',
-    name: 'Rohit Sharma',
-    basePrice: 190000,
-    category: 'Batsman',
-    status: 'available',
-    battingSkill: 9,
-    bowlingSkill: 4,
-    fieldingSkill: 7
-  }
-];
-
 const TeamRepAuctionView = () => {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const [eventId, setEventId] = useState<string>('');
+  const [auctionId, setAuctionId] = useState<string>('');
   const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [soldPlayers, setSoldPlayers] = useState<Player[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null);
-  const [auctionStatus, setAuctionStatus] = useState<'ready' | 'live' | 'paused' | 'completed'>('live');
+  const [currentPlayer, setCurrentPlayer] = useState<ApiPlayer | null>(null);
+  const [auctionStatus, setAuctionStatus] = useState<'ready' | 'active' | 'paused' | 'completed'>('active');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   
-  const userTeam = teams.find(team => team._id === user?.teamId) || teams[0]; 
+  const userTeam = teams.find(team => team._id === user?.teamId) || teams[0];
+  
+  useEffect(() => {
+    const urlAuctionId = searchParams.get('auctionId');
+    const urlEventId = searchParams.get('eventId') || '67daf7232fef49cb95788d77'; 
+    
+    if (urlAuctionId) {
+      setAuctionId(urlAuctionId);
+    } else {
+      setError('No auction ID provided in the URL');
+    }
+    
+    setEventId(urlEventId);
+    
+    const pollInterval = setInterval(async () => {
+      if (urlEventId) {
+        try {
+          setLoading(true);
+          const player = await auctionService.getRandomPlayer(urlEventId);
+          setCurrentPlayer(player);
+        } catch (err) {
+          console.error('Error fetching current player:', err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }, 5000); // Poll every 5 seconds
+    
+    if (urlEventId) {
+      const fetchCurrentPlayer = async () => {
+        try {
+          setLoading(true);
+          const player = await auctionService.getRandomPlayer(urlEventId);
+          setCurrentPlayer(player);
+        } catch (err) {
+          console.error('Error fetching current player:', err);
+          setError('Failed to load current player');
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchCurrentPlayer();
+    }
+    
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [searchParams]);
   
   const calculateMaxBid = () => {
     const remainingPlayersNeeded = 15 - userTeam.players.length;
@@ -124,35 +147,6 @@ const TeamRepAuctionView = () => {
       return Math.max(maxBid, 0); 
     }
   };
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7 && mockPlayers.length > 0) {
-        const randomIndex = Math.floor(Math.random() * mockPlayers.length);
-        const player = mockPlayers[randomIndex];
-        
-        const soldAmount = player.basePrice + Math.floor(Math.random() * player.basePrice);
-        
-        const teamIndex = Math.floor(Math.random() * teams.length);
-        const team = teams[teamIndex];
-        
-        const updatedPlayer = {
-          ...player,
-          status: Math.random() > 0.2 ? 'sold' as const : 'unsold' as const,
-          teamId: Math.random() > 0.2 ? team._id : undefined,
-          soldAmount: Math.random() > 0.2 ? soldAmount : undefined
-        };
-        
-        setSoldPlayers(prev => [updatedPlayer, ...prev]);
-        setCurrentPlayer(null);
-      } else if (Math.random() > 0.5 && mockPlayers.length > 0) {
-        const randomIndex = Math.floor(Math.random() * mockPlayers.length);
-        setCurrentPlayer(mockPlayers[randomIndex]);
-      }
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [teams]);
   
   return (
     <Box>
@@ -168,7 +162,7 @@ const TeamRepAuctionView = () => {
           label={auctionStatus.toUpperCase()} 
           color={
             auctionStatus === 'ready' ? 'default' : 
-            auctionStatus === 'live' ? 'success' : 
+            auctionStatus === 'active' ? 'success' : 
             auctionStatus === 'paused' ? 'warning' : 
             'error'
           }
@@ -186,81 +180,93 @@ const TeamRepAuctionView = () => {
             The auction has concluded. Thank you for participating.
           </Typography>
         )}
+        
+        {error && (
+          <Chip 
+            label={error}
+            color="error"
+            variant="outlined"
+            sx={{ ml: 'auto' }}
+          />
+        )}
       </Paper>
       
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-        {currentPlayer ? (
-            <>
-            <Typography variant="h6" gutterBottom sx={{ mb: 3, borderBottom: '2px solid #f0f0f0', pb: 1 }}>
-                Currently Bidding
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Current Player
             </Typography>
             
-            <Grid container spacing={3}>
-                <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
-                <PlayerTradingCard player={currentPlayer} />
-                </Grid>
-                
-                <Grid item xs={12} md={7}>
-                <Box sx={{ 
-                    p: 3, 
-                    bgcolor: 'primary.main', 
-                    color: 'white', 
-                    borderRadius: 4,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                    justifyContent: 'center',
-                    background: 'linear-gradient(135deg, #1976d2, #0d47a1)'
-                }}>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    Your Bidding Limit
-                    </Typography>
-                    <Typography variant="h2" sx={{ 
-                    fontWeight: 'bold',
-                    textShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                    letterSpacing: '-0.5px'
-                    }}>
-                    ₹{calculateMaxBid().toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-                    This is the maximum amount you can bid for this player based on your remaining budget and squad needs.
-                    </Typography>
-                    
-                    {/* Decorative elements */}
+            {currentPlayer ? (
+              <Box>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={5} sx={{ display: 'flex', justifyContent: 'center' }}>
+                    <PlayerTradingCard player={currentPlayer} />
+                  </Grid>
+                  
+                  <Grid item xs={12} md={7}>
                     <Box sx={{ 
-                    position: 'absolute', 
-                    top: 10, 
-                    right: 10, 
-                    fontSize: '1.8rem', 
-                    opacity: 0.2,
-                    transform: 'rotate(15deg)'
+                      p: 3, 
+                      bgcolor: 'primary.main', 
+                      color: 'white', 
+                      borderRadius: 4,
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #1976d2, #0d47a1)'
                     }}>
-                    💰
+                      <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                        Your Bidding Limit
+                      </Typography>
+                      <Typography variant="h2" sx={{ 
+                        fontWeight: 'bold',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        letterSpacing: '-0.5px'
+                      }}>
+                        ₹{calculateMaxBid().toLocaleString()}
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
+                        This is the maximum amount you can bid for this player based on your remaining budget and squad needs.
+                      </Typography>
+                      
+                      <Box sx={{ 
+                        position: 'absolute', 
+                        top: 10, 
+                        right: 10, 
+                        fontSize: '1.8rem', 
+                        opacity: 0.2,
+                        transform: 'rotate(15deg)'
+                      }}>
+                        💰
+                      </Box>
                     </Box>
-                </Box>
+                  </Grid>
                 </Grid>
-            </Grid>
-            </>
-        ) : (
-            <Box sx={{ 
-            textAlign: 'center', 
-            py: 5, 
-            px: 3,
-            background: 'linear-gradient(to bottom, #f9f9f9, #f5f5f5)',
-            borderRadius: 4,
-            border: '1px dashed #ccc'
-            }}>
-            <Typography variant="h5" gutterBottom sx={{ color: 'text.secondary' }}>
-                Waiting for next player...
-            </Typography>
-            <CircularProgress sx={{ mt: 2, color: 'primary.main' }} />
-            </Box>
-        )}
-        </Paper>
+              </Box>
+            ) : (
+              <Box 
+                sx={{ 
+                  p: 4, 
+                  textAlign: 'center',
+                  border: '1px dashed #ccc',
+                  borderRadius: 1
+                }}
+              >
+                <Typography variant="body1" gutterBottom>
+                  {auctionStatus === 'ready' ? 
+                    "Waiting for the auction to start" : 
+                    auctionStatus === 'completed' ?
+                    "Auction completed!" :
+                    "No player currently on auction"
+                  }
+                </Typography>
+                {loading && <CircularProgress sx={{ mt: 2 }} />}
+              </Box>
+            )}
+          </Paper>
           
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" gutterBottom>
