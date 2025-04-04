@@ -209,7 +209,7 @@ const DeclareAuctionPage = () => {
 
       const data = await res.json();
       router.push(
-        `/dashboard/auction?auctionId=${data.auctionId}&auctionStatus=${selectedEvent.auctionStatus}&basePrice=${basePrice}`
+        `/dashboard/auction?auctionId=${data.auctionId}&eventId=${selectedEvent._id}&auctionStatus=${selectedEvent.auctionStatus}&basePrice=${basePrice}`
       );
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -363,7 +363,7 @@ const DeclareAuctionPage = () => {
                 fullWidth
                 onClick={() =>
                   router.push(
-                    `/dashboard/auction?auctionId=${selectedEvent.auctionId}&auctionStatus=${selectedEvent.auctionStatus}&basePrice=${basePrice}`
+                    `/dashboard/auction?auctionId=${selectedEvent.auctionId}&eventId=${selectedEvent._id}&auctionStatus=${selectedEvent.auctionStatus}&basePrice=${basePrice}`
                   )
                 }
               >

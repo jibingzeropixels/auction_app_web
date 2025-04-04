@@ -1,4 +1,3 @@
-// ... other imports remain unchanged
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -27,7 +26,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  SelectChangeEvent,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
@@ -47,7 +45,7 @@ interface Team {
 const AdminAuctionView = () => {
   const searchParams = useSearchParams();
 
-  const [eventId, setEventId] = useState<string>("67daf7232fef49cb95788d77");
+  const [eventId, setEventId] = useState<string>(""); // default is empty now
   const [auctionId, setAuctionId] = useState<string>("");
 
   const [teams, setTeams] = useState<Team[]>([]);
@@ -68,13 +66,23 @@ const AdminAuctionView = () => {
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
   const [processedPlayerCount, setProcessedPlayerCount] = useState<number>(0);
 
-  // Read auctionId from URL
+  // Read auctionId and eventId from URL search parameters
   useEffect(() => {
     const urlAuctionId = searchParams.get("auctionId");
     if (urlAuctionId) {
       setAuctionId(urlAuctionId);
     } else {
       setError("No auction ID provided. Please include auctionId in the URL.");
+    }
+    const urlEventId = searchParams.get("eventId");
+    if (urlEventId) {
+      setEventId(urlEventId);
+    } else {
+      setError((prev) =>
+        prev
+          ? prev + " Also, no event ID provided in URL."
+          : "No event ID provided in URL."
+      );
     }
   }, [searchParams]);
 
@@ -227,7 +235,7 @@ const AdminAuctionView = () => {
     setConfirmDialogOpen(true);
   };
 
-  const handleSelectTeam = (event: SelectChangeEvent<string>) => {
+  const handleSelectTeam = (event: any) => {
     setSelectedTeamId(event.target.value);
   };
 
