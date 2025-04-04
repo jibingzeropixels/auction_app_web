@@ -1,4 +1,4 @@
-import { ApiPlayer } from '@/types/player';
+import { ApiPlayer } from "@/types/player";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -10,15 +10,27 @@ const getAuthHeaders = () => {
   };
 };
 
+export interface TeamBudget {
+  teamId: string;
+  playersBought: number;
+  remainingBudget: number;
+  reserveAmount: number;
+  maxAuctionAmount: number;
+  teamName: string;
+}
+
 export const auctionService = {
-  getRandomPlayer: async (eventId: string, options?: { skipped?: boolean; playerId?: string }): Promise<ApiPlayer> => {
+  getRandomPlayer: async (
+    eventId: string,
+    options?: { skipped?: boolean; playerId?: string }
+  ): Promise<ApiPlayer> => {
     try {
       let url = `${API_BASE_URL}/auctions/getRandomPlayers?eventId=${eventId}`;
-      
+
       if (options?.skipped && options?.playerId) {
         url += `&skipped=true&playerId=${options.playerId}`;
       }
-      
+
       const response = await fetch(url, {
         method: "GET",
         headers: getAuthHeaders(),
@@ -67,7 +79,7 @@ export const auctionService = {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          auctionId
+          auctionId,
         }),
       });
 
@@ -81,7 +93,25 @@ export const auctionService = {
       console.error("Error resetting auction:", error);
       throw error;
     }
-  }
+  },
+
+  getTeamBudget: async (auctionId: string): Promise<TeamBudget[]> => {
+    try {
+      const url = `${API_BASE_URL}/auctions/teamBudget?auctionId=${auctionId}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch team budgets");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching team budgets:", error);
+      throw error;
+    }
+  },
 };
-
-
