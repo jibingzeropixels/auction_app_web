@@ -1,7 +1,6 @@
 // src/services/auth-service.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-console.log('Sending request to:', API_BASE_URL);
-
+console.log("Sending request to:", API_BASE_URL);
 
 export const authService = {
   register: async (userData: {
@@ -14,46 +13,63 @@ export const authService = {
   }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(userData),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+        throw new Error(errorData.message || "Registration failed");
       }
-      
+
       return await response.json();
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error("Registration error:", error);
       throw error;
     }
   },
-  login: async (
-    email: string,
-    password: string
-  ) => {
+  login: async (email: string, password: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password})
+        body: JSON.stringify({ email, password }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(errorData.message || "Login failed");
       }
-      
+
       return await response.json();
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       throw error;
     }
-  }
+  },
+  getAllAttributes: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/getAllAttributes`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch attributes");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("getAllAttributes error:", error);
+      throw error;
+    }
+  },
 };
