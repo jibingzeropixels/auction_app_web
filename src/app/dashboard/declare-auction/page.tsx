@@ -24,7 +24,6 @@ import { seasonsService } from "@/services/seasons";
 import { teamsService } from "@/services/teams";
 import { playersService } from "@/services/players-service";
 
-// Updated type definitions
 type Season = {
   _id: string;
   name: string;
@@ -35,7 +34,7 @@ type Event = {
   name: string;
   seasonId: string;
   auctionStatus: "pending" | "declared" | "in-progress" | "completed";
-  auctionId?: string; // For later use
+  auctionId?: string;
 };
 
 type TeamType = {
@@ -77,14 +76,19 @@ const DeclareAuctionPage = () => {
   const [budget, setBudget] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
-  // New state variables for teams and players count
   const [totalTeams, setTotalTeams] = useState<number>(0);
   const [totalPlayers, setTotalPlayers] = useState<number>(0);
 
-  // State for the dialog
   const [openDialog, setOpenDialog] = useState<boolean>(false);
 
-  // Fetch seasons and events from the API
+  // Mapping for auction status labels
+  const statusMapping: Record<string, string> = {
+    pending: "Pending",
+    declared: "Declared",
+    "in-progress": "In Progress",
+    completed: "Complete",
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -93,7 +97,10 @@ const DeclareAuctionPage = () => {
 
         const eventsData: Event[] = await eventsService.getAllEvents();
         setEvents(eventsData);
-        setFilteredEvents(eventsData);
+        // Filter out completed events when first loading
+        setFilteredEvents(
+          eventsData.filter((e) => e.auctionStatus !== "completed")
+        );
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -104,33 +111,31 @@ const DeclareAuctionPage = () => {
     fetchData();
   }, []);
 
-  // Filter events based on selected season
   useEffect(() => {
     if (selectedSeason) {
       setFilteredEvents(
-        events.filter((e) => e.seasonId === selectedSeason._id)
+        events.filter(
+          (e) =>
+            e.seasonId === selectedSeason._id && e.auctionStatus !== "completed"
+        )
       );
     } else {
-      setFilteredEvents(events);
+      setFilteredEvents(events.filter((e) => e.auctionStatus !== "completed"));
     }
-    // Clear selected event and previous counts when season changes
     setSelectedEvent(null);
     setTotalTeams(0);
     setTotalPlayers(0);
   }, [selectedSeason, events]);
 
-  // Each time the selected event changes, update team and player counts
   useEffect(() => {
     if (selectedEvent) {
       const fetchCounts = async () => {
         try {
-          // Fetch all teams and filter by selected event
           const allTeams: TeamType[] = await teamsService.getAllTeams();
           const eventTeams = allTeams.filter(
             (team) => team.eventId === selectedEvent._id
           );
 
-          // Fetch all players and transform API response if needed
           const apiPlayers = await playersService.getAllPlayers();
           const eventPlayers: Player[] = apiPlayers
             .map((apiPlayer: any) => ({
@@ -157,7 +162,6 @@ const DeclareAuctionPage = () => {
     }
   }, [selectedEvent]);
 
-  // Calculate team size (players per team). If not whole, display a range.
   const calculateTeamSize = () => {
     if (totalTeams === 0) return "-";
     const size = totalPlayers / totalTeams;
@@ -179,7 +183,6 @@ const DeclareAuctionPage = () => {
   const handleDeclareAuction = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // Validation: Check if counts are zero before proceeding
     if (totalTeams === 0 || totalPlayers === 0) {
       setOpenDialog(true);
       return;
@@ -205,7 +208,6 @@ const DeclareAuctionPage = () => {
       }
 
       const data = await res.json();
-      // Pass auctionStatus and basePrice in the URL query params
       router.push(
         `/dashboard/auction?auctionId=${data.auctionId}&auctionStatus=${selectedEvent.auctionStatus}&basePrice=${basePrice}`
       );
@@ -220,7 +222,6 @@ const DeclareAuctionPage = () => {
     }
   };
 
-  // Function to close the dialog
   const handleCloseDialog = () => {
     setOpenDialog(false);
   };
@@ -236,15 +237,12 @@ const DeclareAuctionPage = () => {
   return (
     <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
       <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
-        {/* Updated heading */}
         <Typography variant="h4" align="center" sx={{ mb: 3 }}>
           Auctions
         </Typography>
 
-        {/* Form Start */}
         <Box component="form" onSubmit={handleDeclareAuction} noValidate>
           <Stack spacing={3}>
-            {/* Season Select */}
             <FormControl fullWidth>
               <Autocomplete
                 options={seasons}
@@ -256,7 +254,6 @@ const DeclareAuctionPage = () => {
               />
             </FormControl>
 
-            {/* Event Select */}
             <FormControl fullWidth>
               <Autocomplete
                 options={filteredEvents}
@@ -274,7 +271,7 @@ const DeclareAuctionPage = () => {
                     >
                       <span>{option.name}</span>
                       <Chip
-                        label={option.auctionStatus}
+                        label={statusMapping[option.auctionStatus]}
                         size="small"
                         color={
                           option.auctionStatus === "pending"
@@ -294,26 +291,32 @@ const DeclareAuctionPage = () => {
                 )}
               />
             </FormControl>
-            {/* Display event details if an event is selected */}
+
             {selectedEvent && (
               <Box
                 sx={{
                   mb: 2,
                   p: 2,
-                  backgroundColor: "grey.200", // A darker white / contrast color
+                  backgroundColor: "grey.200",
                   borderRadius: 1,
                   textAlign: "center",
                 }}
               >
-                <Typography variant="body1">
+                <Typography
+                  variant="body1"
+                  sx={{ fontSize: "1.1rem", fontWeight: 500 }}
+                >
                   Total Teams: {totalTeams} | Total Players: {totalPlayers}
                 </Typography>
-                <Typography variant="body1">
+                <Typography
+                  variant="body1"
+                  sx={{ fontSize: "1.1rem", fontWeight: 500 }}
+                >
                   Team Size: {calculateTeamSize()}
                 </Typography>
               </Box>
             )}
-            {/* Conditional fields for a pending event */}
+
             {selectedEvent && selectedEvent.auctionStatus === "pending" && (
               <>
                 <TextField
@@ -349,9 +352,7 @@ const DeclareAuctionPage = () => {
             )}
           </Stack>
         </Box>
-        {/* Form End */}
 
-        {/* Button for declared or in-progress events */}
         {selectedEvent &&
           (selectedEvent.auctionStatus === "declared" ||
             selectedEvent.auctionStatus === "in-progress") && (
@@ -372,7 +373,6 @@ const DeclareAuctionPage = () => {
           )}
       </Paper>
 
-      {/* Dialog for insufficient teams or players */}
       <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>Insufficient Teams or Players</DialogTitle>
         <DialogContent>
