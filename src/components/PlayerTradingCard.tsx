@@ -32,7 +32,7 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
   
   const basePrice = isLegacyPlayer 
     ? player.basePrice 
-    : player.basePrice || 50000;
+    : player.basePrice || 100;
     
   const isIcon = !isLegacyPlayer ? player.isIcon : false;
   
@@ -62,22 +62,20 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
       'chess': '#795548'
     };
     
-    // Handle both array of strings and array of objects
     const firstSkill = skills[0];
     let skillName: string;
 
     if (typeof firstSkill === 'string') {
       skillName = firstSkill.toLowerCase();
     } else if (firstSkill && typeof firstSkill === 'object') {
-      // Get the first key from the object
       const keys = Object.keys(firstSkill);
       if (keys.length > 0) {
         skillName = keys[0].toLowerCase();
       } else {
-        return '#2196f3'; // Default blue
+        return '#2196f3';
       }
     } else {
-      return '#2196f3'; // Default blue
+      return '#2196f3'; 
     }
     
     return colorMap[skillName] || '#2196f3';
@@ -137,7 +135,7 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
         return '🌟';
       }
     } else {
-      return '🌟'; // Default star
+      return '🌟'; 
     }
     
     return iconMap[skillName] || '🌟';

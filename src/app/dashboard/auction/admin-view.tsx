@@ -116,7 +116,7 @@ const AdminAuctionView = () => {
       const randomPlayer = await auctionService.getRandomPlayer(eventId);
       
       setCurrentPlayer(randomPlayer);
-      setBidAmount(randomPlayer.basePrice?.toString() || '50000');
+      setBidAmount(randomPlayer.basePrice?.toString() || '100');
       setAuctionStatus('live');
       setError('');
       setSuccess('Auction started');
@@ -154,7 +154,7 @@ const AdminAuctionView = () => {
       const randomPlayer = await auctionService.getRandomPlayer(eventId);
       
       setCurrentPlayer(randomPlayer);
-      setBidAmount(randomPlayer.basePrice?.toString() || '50000');
+      setBidAmount(randomPlayer.basePrice?.toString() || '100');
       setSelectedTeamId('');
       setError('');
       setCurrentPlayerIndex(currentPlayerIndex + 1);
@@ -274,7 +274,7 @@ const AdminAuctionView = () => {
           try {
             const randomPlayer = await auctionService.getRandomPlayer(eventId);
             setCurrentPlayer(randomPlayer);
-            setBidAmount(randomPlayer.basePrice?.toString() || '50000');
+            setBidAmount(randomPlayer.basePrice?.toString() || '100');
             setSelectedTeamId('');
           } catch (err) {
             console.error('Error fetching next player:', err);
@@ -333,7 +333,7 @@ const AdminAuctionView = () => {
             });
             
             setCurrentPlayer(randomPlayer);
-            setBidAmount(randomPlayer.basePrice?.toString() || '50000');
+            setBidAmount(randomPlayer.basePrice?.toString() || '100');
             setSelectedTeamId('');
           } catch (err) {
             console.error('Error fetching next player:', err);
@@ -479,7 +479,7 @@ const AdminAuctionView = () => {
                               value={team._id}
                               disabled={team.remainingBudget < parseInt(bidAmount || '0')}
                             >
-                              {team.name} (₹{team.remainingBudget.toLocaleString()} left)
+                              {team.name}
                             </MenuItem>
                           ))}
                         </Select>
@@ -494,10 +494,9 @@ const AdminAuctionView = () => {
                         onChange={handleBidAmountChange}
                         type="number"
                         InputProps={{
-                          inputProps: { min: currentPlayer.basePrice || 50000 }
+                          inputProps: { min: currentPlayer.basePrice || 100 }
                         }}
                         error={error.includes('bid amount')}
-                        helperText={selectedTeamId ? `Max: ₹${calculateMaxBid(selectedTeamId).toLocaleString()}` : ''}
                         disabled={auctionStatus !== 'live'}
                       />
                     </Box>
@@ -668,7 +667,7 @@ const AdminAuctionView = () => {
                       sx={{ mt: 1, mb: 1, height: 8, borderRadius: 1 }}
                     />
                     <Typography variant="body2" color="text.secondary">
-                      {team.players.length} players • ₹{(team.totalBudget - team.remainingBudget).toLocaleString()} spent
+                      {team.players.length} players
                     </Typography>
                     <Divider sx={{ mt: 2 }} />
                   </Box>
