@@ -723,7 +723,7 @@ const AdminAuctionView = () => {
                       sx={{ mt: 1, mb: 1, height: 8, borderRadius: 1 }}
                     />
                     <Typography variant="body2" color="text.secondary">
-                      {budget.playersBought ?? 0} players bought
+                      {budget.playersBought - 1} players bought
                     </Typography>
                     <Divider sx={{ mt: 2 }} />
                   </Box>
