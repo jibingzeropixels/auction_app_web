@@ -63,39 +63,41 @@ const SelectAuctionPage = () => {
           <Typography>No events available.</Typography>
         ) : (
           <List>
-            {events.map((event) => (
-              <ListItem
-                key={event._id}
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  borderBottom: "1px solid #ddd",
-                }}
-              >
-                <ListItemText
-                  primary={event.name}
-                  secondary={`Auction Status: ${event.auctionStatus}`}
-                />
-                {event.auctionStatus === "in-progress" && event.auctionId ? (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() =>
-                      router.push(
-                        `/dashboard/auction?auctionId=${event.auctionId}`
-                      )
-                    }
-                  >
-                    Go to Auction
-                  </Button>
-                ) : (
-                  <Button variant="contained" disabled>
-                    Not in Auction
-                  </Button>
-                )}
-              </ListItem>
-            ))}
+            {events
+              .filter((event) => event.auctionStatus !== "completed")
+              .map((event) => (
+                <ListItem
+                  key={event._id}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    borderBottom: "1px solid #ddd",
+                  }}
+                >
+                  <ListItemText
+                    primary={event.name}
+                    secondary={`Auction Status: ${event.auctionStatus}`}
+                  />
+                  {event.auctionStatus === "in-progress" && event.auctionId ? (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/auction?auctionId=${event.auctionId}`
+                        )
+                      }
+                    >
+                      Go to Auction
+                    </Button>
+                  ) : (
+                    <Button variant="contained" disabled>
+                      Not in Auction
+                    </Button>
+                  )}
+                </ListItem>
+              ))}
           </List>
         )}
       </Paper>
