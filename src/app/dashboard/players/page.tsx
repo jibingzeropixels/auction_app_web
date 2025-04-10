@@ -261,9 +261,9 @@ export default function PlayersPage() {
         const skills: SkillEntry[] = params.value || [];
         return (
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-            {skills.map((s) => (
+            {skills.map((s, index) => (
               <Chip
-                key={s.skillName}
+                key={`${s.skillName}-${index}`}
                 label={`${s.skillName}: ${s.rating}`}
                 size="small"
               />
