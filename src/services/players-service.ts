@@ -1,4 +1,4 @@
-import { ApiPlayer } from '@/types/player';
+import { ApiPlayer } from "@/types/player";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -35,7 +35,8 @@ export const playersService = {
     lastName: string;
     email?: string;
     phone?: string | null;
-    skills: string[];
+    // Changed from string[] to an array of objects mapping skill names to ratings.
+    skills: { [key: string]: number }[];
     eventId: string;
     isIcon: boolean;
   }) => {
@@ -64,7 +65,8 @@ export const playersService = {
     lastName?: string;
     email?: string;
     phone?: string | null;
-    skills?: string[];
+    // Changed from string[] to an array of objects mapping skill names to ratings.
+    skills?: { [key: string]: number }[];
     eventId?: string;
     isIcon?: boolean;
   }) => {

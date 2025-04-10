@@ -14,10 +14,10 @@ import {
   IconButton,
   TextField,
   InputAdornment,
-  FormControl,
   Autocomplete,
   CircularProgress,
   Chip,
+  FormControl,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -28,28 +28,18 @@ import { eventsService } from "@/services/events";
 import { teamsService } from "@/services/teams";
 import { playersService } from "@/services/players-service";
 
-type Season = {
-  _id: string;
-  name: string;
-};
+type Season = { _id: string; name: string };
+type EventType = { _id: string; name: string; seasonId: string };
+type TeamType = { _id: string; name: string; eventId: string };
 
-type EventType = {
-  _id: string;
-  name: string;
-  seasonId: string;
-};
-
-type TeamType = {
-  _id: string;
-  name: string;
-  eventId: string;
-};
+// Internally, we store skills as a flat array of name/rating pairs
+type SkillEntry = { skillName: string; rating: number };
 
 type Player = {
   _id: string;
   name: string;
   teamId: string | null;
-  skills: string[];
+  skills: SkillEntry[];
   status: "available" | "sold" | "unsold" | string;
   eventId: string;
   email: string;
@@ -68,24 +58,13 @@ export default function PlayersPage() {
 
   const [selectedSeason, setSelectedSeason] = useState<
     Season | { _id: "all"; name: string }
-  >({
-    _id: "all",
-    name: "All Seasons",
-  });
+  >({ _id: "all", name: "All Seasons" });
   const [selectedEvent, setSelectedEvent] = useState<
     EventType | { _id: "all"; name: string; seasonId: "all" }
-  >({
-    _id: "all",
-    name: "All Events",
-    seasonId: "all",
-  });
+  >({ _id: "all", name: "All Events", seasonId: "all" });
   const [selectedTeam, setSelectedTeam] = useState<
     TeamType | { _id: "all"; name: string; eventId: "all" }
-  >({
-    _id: "all",
-    name: "All Teams",
-    eventId: "all",
-  });
+  >({ _id: "all", name: "All Teams", eventId: "all" });
 
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -94,12 +73,14 @@ export default function PlayersPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Measure container width
   useEffect(() => {
     if (containerRef.current) {
       setComputedMaxWidth(`${containerRef.current.offsetWidth}px`);
     }
   }, []);
 
+  // Fetch seasons, events, teams, and players
   useEffect(() => {
     async function fetchData() {
       try {
@@ -110,102 +91,99 @@ export default function PlayersPage() {
             teamsService.getAllTeams(),
             playersService.getAllPlayers(),
           ]);
+
         setSeasons(fetchedSeasons);
         setEvents(fetchedEvents);
         setTeams(fetchedTeams);
 
-        // Convert API players to the format needed for the UI
-        const formattedPlayers: Player[] = fetchedPlayers.map((player) => ({
-          _id: player._id,
-          name: `${player.firstName} ${player.lastName}`,
-          teamId: player.teamId || null,
-          // Pass all skills (assumes player.skills is already an array)
-          skills:
-            player.skills && player.skills.length > 0 ? player.skills : [],
-          status: player.soldStatus || "available",
-          eventId: player.eventId || "",
-          email: player.email || "",
-          createdAt: player.createdAt,
-        }));
+        // Map API players into our UI shape
+        const formattedPlayers: Player[] = fetchedPlayers.map((p) => {
+          // flatten API skills: array of objects { skill: rating }
+          const flat: SkillEntry[] = Array.isArray(p.skills)
+            ? p.skills.flatMap((obj) =>
+                Object.entries(obj).map(([skillName, rating]) => ({
+                  skillName,
+                  rating: Number(rating),
+                }))
+              )
+            : [];
+
+          return {
+            _id: p._id,
+            name: `${p.firstName} ${p.lastName}`,
+            teamId: p.teamId ?? null,
+            skills: flat,
+            status: p.soldStatus ?? "available",
+            eventId: p.eventId ?? "",
+            email: p.email ?? "",
+            createdAt: p.createdAt,
+          };
+        });
 
         setPlayers(formattedPlayers);
         setFilteredPlayers(formattedPlayers);
-      } catch (error) {
-        console.error("Error loading data:", error);
+      } catch (err) {
+        console.error("Error loading data:", err);
       } finally {
         setLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
+  // Apply season/event/team/search filters
   useEffect(() => {
-    const filtered = players.filter((player) => {
-      const playerEvent = events.find((e) => e._id === player.eventId);
-
-      const eventBelongsToSeason =
-        selectedSeason._id === "all" ||
-        playerEvent?.seasonId === selectedSeason._id;
-
-      const belongsToEvent =
-        selectedEvent._id === "all" || player.eventId === selectedEvent._id;
-
-      const belongsToTeam =
-        selectedTeam._id === "all" || player.teamId === selectedTeam._id;
-
-      const matchesSearch = player.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
-      return (
-        eventBelongsToSeason && belongsToEvent && belongsToTeam && matchesSearch
-      );
-    });
-
-    setFilteredPlayers(filtered);
+    setFilteredPlayers(
+      players.filter((player) => {
+        const ev = events.find((e) => e._id === player.eventId);
+        const okSeason =
+          selectedSeason._id === "all" || ev?.seasonId === selectedSeason._id;
+        const okEvent =
+          selectedEvent._id === "all" || player.eventId === selectedEvent._id;
+        const okTeam =
+          selectedTeam._id === "all" || player.teamId === selectedTeam._id;
+        const okSearch = player.name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        return okSeason && okEvent && okTeam && okSearch;
+      })
+    );
   }, [
+    players,
+    events,
     selectedSeason,
     selectedEvent,
     selectedTeam,
     searchTerm,
-    players,
-    events,
-    teams,
   ]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) =>
     setSearchTerm(e.target.value);
-  };
 
   const handleSeasonChange = (
     _: React.SyntheticEvent,
-    newValue: Season | { _id: "all"; name: string } | null
+    val: Season | { _id: "all"; name: string } | null
   ) => {
-    if (newValue) {
-      setSelectedSeason(newValue);
+    if (val) {
+      setSelectedSeason(val);
       setSelectedEvent({ _id: "all", name: "All Events", seasonId: "all" });
       setSelectedTeam({ _id: "all", name: "All Teams", eventId: "all" });
     }
   };
-
   const handleEventChange = (
     _: React.SyntheticEvent,
-    newValue: EventType | { _id: "all"; name: string; seasonId: "all" } | null
+    val: EventType | { _id: "all"; name: string; seasonId: "all" } | null
   ) => {
-    if (newValue) {
-      setSelectedEvent(newValue);
+    if (val) {
+      setSelectedEvent(val);
       setSelectedTeam({ _id: "all", name: "All Teams", eventId: "all" });
     }
   };
-
   const handleTeamChange = (
     _: React.SyntheticEvent,
-    newValue: TeamType | { _id: "all"; name: string; eventId: "all" } | null
+    val: TeamType | { _id: "all"; name: string; eventId: "all" } | null
   ) => {
-    if (newValue) {
-      setSelectedTeam(newValue);
-    }
+    if (val) setSelectedTeam(val);
   };
 
   const handleAddPlayer = () => {
@@ -213,17 +191,23 @@ export default function PlayersPage() {
   };
 
   const handleEdit = (playerId: string) => {
-    const player = players.find((p) => p._id === playerId);
-    if (!player) return;
+    const p = players.find((x) => x._id === playerId);
+    if (!p) return;
+
+    // Re‑group into a single object: { skillName: rating, ... }
+    const grouped = p.skills.reduce<Record<string, number>>((acc, cur) => {
+      acc[cur.skillName] = cur.rating;
+      return acc;
+    }, {});
+
+    const skillsParam = encodeURIComponent(JSON.stringify([grouped]));
 
     router.push(
-      `/dashboard/players/add?edit=${playerId}&name=${encodeURIComponent(
-        player.name
-      )}&eventId=${encodeURIComponent(
-        player.eventId
-      )}&skills=${encodeURIComponent(
-        JSON.stringify(player.skills)
-      )}&email=${encodeURIComponent(player.email)}`
+      `/dashboard/players/add?edit=${playerId}` +
+        `&name=${encodeURIComponent(p.name)}` +
+        `&eventId=${encodeURIComponent(p.eventId)}` +
+        `&skills=${skillsParam}` +
+        `&email=${encodeURIComponent(p.email)}`
     );
   };
 
@@ -231,33 +215,23 @@ export default function PlayersPage() {
     setSelectedPlayer(player);
     setOpenDeleteDialog(true);
   };
-
   const confirmDelete = async () => {
-    if (selectedPlayer) {
-      try {
-        setLoading(true);
-        await playersService.deletePlayer(selectedPlayer._id);
-
-        setPlayers((prevPlayers) =>
-          prevPlayers.filter((p) => p._id !== selectedPlayer._id)
-        );
-
-        setFilteredPlayers((prevPlayers) =>
-          prevPlayers.filter((p) => p._id !== selectedPlayer._id)
-        );
-
-        setOpenDeleteDialog(false);
-        setSelectedPlayer(null);
-      } catch (error) {
-        console.error("Error deleting player:", error);
-      } finally {
-        setLoading(false);
-      }
+    if (!selectedPlayer) return;
+    try {
+      setLoading(true);
+      await playersService.deletePlayer(selectedPlayer._id);
+      setPlayers((prev) => prev.filter((x) => x._id !== selectedPlayer._id));
+      setOpenDeleteDialog(false);
+      setSelectedPlayer(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const getStatusColor = (s: string) => {
+    switch (s) {
       case "available":
         return "primary";
       case "sold":
@@ -279,32 +253,37 @@ export default function PlayersPage() {
     },
     {
       field: "skills",
-      headerName: "skills",
-      width: 130,
+      headerName: "Skills",
+      flex: 1,
+      minWidth: 200,
       headerClassName: "super-app-theme--header",
+      renderCell: (params) => {
+        const skills: SkillEntry[] = params.value || [];
+        return (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+            {skills.map((s) => (
+              <Chip
+                key={s.skillName}
+                label={`${s.skillName}: ${s.rating}`}
+                size="small"
+              />
+            ))}
+          </Box>
+        );
+      },
     },
     {
       field: "status",
       headerName: "Status",
       width: 120,
       headerClassName: "super-app-theme--header",
-      renderCell: (params) => {
-        // Use a default string if params.value is undefined
-        const status: string = params.value || "unknown";
-        return (
-          <Chip
-            label={status.charAt(0).toUpperCase() + status.slice(1)}
-            color={
-              getStatusColor(status) as
-                | "primary"
-                | "success"
-                | "error"
-                | "default"
-            }
-            size="small"
-          />
-        );
-      },
+      renderCell: (params) => (
+        <Chip
+          label={String(params.value).replace(/^./, (c) => c.toUpperCase())}
+          color={getStatusColor(String(params.value))}
+          size="small"
+        />
+      ),
     },
     {
       field: "teamId",
@@ -312,11 +291,8 @@ export default function PlayersPage() {
       width: 180,
       headerClassName: "super-app-theme--header",
       renderCell: (params) => {
-        const teamName = params.value
-          ? teams.find((team) => team._id === params.value)?.name ||
-            "Unknown Team"
-          : "Not Assigned";
-        return <span>{teamName}</span>;
+        const team = teams.find((t) => t._id === params.value);
+        return <span>{team?.name ?? "Not Assigned"}</span>;
       },
     },
     {
@@ -327,8 +303,8 @@ export default function PlayersPage() {
       renderCell: (params) => (
         <Box>
           <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={(e) => {
+              e.stopPropagation();
               handleEdit(params.row._id);
             }}
             color="primary"
@@ -336,8 +312,8 @@ export default function PlayersPage() {
             <EditIcon />
           </IconButton>
           <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
+            onClick={(e) => {
+              e.stopPropagation();
               handleDeleteClick(params.row);
             }}
             color="error"
@@ -345,9 +321,9 @@ export default function PlayersPage() {
             <DeleteIcon />
           </IconButton>
           <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
-              console.log("View player:", params.row);
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log("View", params.row);
             }}
             color="info"
           >
@@ -378,51 +354,40 @@ export default function PlayersPage() {
       </Typography>
 
       <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
-        <FormControl sx={{ minWidth: 150 }}>
+        <FormControl sx={{ width: 200 }}>
           <Autocomplete
-            disablePortal
             options={seasonOptions}
             value={selectedSeason}
             onChange={handleSeasonChange}
-            getOptionLabel={(option) => option.name}
-            sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
-            clearIcon={null}
+            getOptionLabel={(o) => o.name}
             renderInput={(params) => <TextField {...params} label="Season" />}
           />
         </FormControl>
-
-        <FormControl sx={{ minWidth: 150 }}>
+        <FormControl sx={{ width: 200 }}>
           <Autocomplete
-            disablePortal
             options={eventOptions.filter(
-              (ev) =>
+              (e) =>
                 selectedSeason._id === "all" ||
-                ev._id === "all" ||
-                ev.seasonId === selectedSeason._id
+                e._id === "all" ||
+                e.seasonId === selectedSeason._id
             )}
             value={selectedEvent}
             onChange={handleEventChange}
-            getOptionLabel={(option) => option.name}
-            sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
-            clearIcon={null}
+            getOptionLabel={(o) => o.name}
             renderInput={(params) => <TextField {...params} label="Event" />}
           />
         </FormControl>
-
-        <FormControl sx={{ minWidth: 150 }}>
+        <FormControl sx={{ width: 200 }}>
           <Autocomplete
-            disablePortal
             options={teamOptions.filter(
-              (tm) =>
+              (t) =>
                 selectedEvent._id === "all" ||
-                tm._id === "all" ||
-                tm.eventId === selectedEvent._id
+                t._id === "all" ||
+                t.eventId === selectedEvent._id
             )}
             value={selectedTeam}
             onChange={handleTeamChange}
-            getOptionLabel={(option) => option.name}
-            sx={{ width: 200, "& .MuiInputBase-root": { height: 40 } }}
-            clearIcon={null}
+            getOptionLabel={(o) => o.name}
             renderInput={(params) => <TextField {...params} label="Team" />}
           />
         </FormControl>
@@ -437,10 +402,8 @@ export default function PlayersPage() {
         }}
       >
         <TextField
-          variant="outlined"
-          placeholder="Search players..."
           size="small"
-          sx={{ width: 250 }}
+          placeholder="Search players..."
           value={searchTerm}
           onChange={handleSearch}
           InputProps={{
@@ -450,13 +413,9 @@ export default function PlayersPage() {
               </InputAdornment>
             ),
           }}
+          sx={{ width: 250 }}
         />
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{ height: 40 }}
-          onClick={handleAddPlayer}
-        >
+        <Button variant="contained" onClick={handleAddPlayer}>
           Add Player
         </Button>
       </Box>
@@ -467,7 +426,7 @@ export default function PlayersPage() {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            height: 400,
+            height: 300,
           }}
         >
           <CircularProgress />
@@ -476,33 +435,17 @@ export default function PlayersPage() {
         <DataGrid
           rows={filteredPlayers}
           columns={columns}
-          disableColumnMenu
-          getRowId={(row) => row._id}
+          getRowId={(r) => r._id}
           pageSizeOptions={[10, 25, 50]}
           initialState={{
-            pagination: {
-              paginationModel: { pageSize: 10, page: 0 },
-            },
+            pagination: { paginationModel: { pageSize: 10, page: 0 } },
           }}
-          localeText={{
-            MuiTablePagination: {
-              labelDisplayedRows: ({ from, count }) => {
-                const currentPage = Math.ceil(from / 10);
-                const totalPages = Math.max(1, Math.ceil(count / 10));
-                return `Page ${currentPage} of ${totalPages}`;
-              },
-            },
-          }}
+          disableColumnMenu
           sx={{
-            width: "100%",
-            bgcolor: "white",
-            "& .MuiDataGrid-cell": { bgcolor: "white" },
-            "& .MuiDataGrid-footerContainer": { bgcolor: "white" },
             "& .super-app-theme--header": {
               backgroundColor: "#1976d2",
               color: "white",
               fontWeight: 700,
-              borderBottom: "2px solid #115293",
             },
           }}
         />
@@ -515,15 +458,12 @@ export default function PlayersPage() {
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete the player{" "}
-            <strong>{selectedPlayer?.name}</strong>?
+            Delete <strong>{selectedPlayer?.name}</strong>?
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={confirmDelete} color="error">
+          <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
+          <Button color="error" onClick={confirmDelete}>
             Delete
           </Button>
         </DialogActions>
