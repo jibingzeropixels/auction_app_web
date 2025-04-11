@@ -56,6 +56,17 @@ interface Player {
   fieldingSkill?: number;
 }
 
+// Define interfaces based on expected user/token structure
+interface TeamAttribute {
+  id: string;
+  // potentially other attributes like name, role, etc.
+}
+
+interface AuthUser {
+  // other properties of the user object (e.g., id, name, email)
+  teamAttributes?: TeamAttribute[]; // Make optional if it might not exist
+}
+
 const decodeJWT = (token: string) => {
   try {
     const payloadBase64 = token.split(".")[1];
@@ -112,12 +123,12 @@ const TeamRepAuctionView = () => {
   const { user } = useAuth();
   const [auctionId, setAuctionId] = useState<string>("");
   const [eventId, setEventId] = useState<string>("");
-  const [teams, setTeams] = useState<Team[]>(mockTeams);
-  const [soldPlayers, setSoldPlayers] = useState<Player[]>([]);
+  const [teams] = useState<Team[]>(mockTeams);
+  const [soldPlayers] = useState<Player[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<ApiPlayer | null>(null);
-  const [auctionStatus, setAuctionStatus] = useState<
-    "ready" | "active" | "paused" | "completed"
-  >("active");
+  const [auctionStatus] = useState<"ready" | "active" | "paused" | "completed">(
+    "active"
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
@@ -126,9 +137,11 @@ const TeamRepAuctionView = () => {
   const [liveSquadPlayers, setLiveSquadPlayers] = useState<
     { firstName: string; lastName: string }[]
   >([]);
+  // ...
+  // Use the defined type instead of 'any'
+  const typedUser = user as AuthUser | null; // Cast to your defined type (and allow null)
 
-  const userTeamId =
-    (user as any)?.teamAttributes?.[0]?.id || getTeamIdFromToken();
+  const userTeamId = typedUser?.teamAttributes?.[0]?.id || getTeamIdFromToken();
 
   // Fallback to static team if live data isn’t available.
   const userTeam = teams.find((team) => team._id === userTeamId) || teams[0];
@@ -530,7 +543,7 @@ const TeamRepAuctionView = () => {
                   color="text.secondary"
                   sx={{ py: 1 }}
                 >
-                  You haven't acquired any players yet.
+                  You haven&apos;t acquired any players yet.
                 </Typography>
               ) : (
                 liveSquadPlayers.map((player, index) => (

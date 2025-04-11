@@ -73,7 +73,7 @@ export const auctionService = {
     }
   },
 
-  resetAuction: async (auctionId: string): Promise<any> => {
+  resetAuction: async (auctionId: string): Promise<unknown> => {
     try {
       const response = await fetch(`${API_BASE_URL}/auctions/resetAuction`, {
         method: "POST",
