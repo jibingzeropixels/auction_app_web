@@ -483,7 +483,7 @@ export default function AddEventPage() {
                 )}
               />
               <FormHelperText>
-                Type skill(s) and press Enter. Click 'X' to remove.
+                Type skill(s) and press Enter. Click &apos;X&apos; to remove.
               </FormHelperText>
             </FormControl>
 

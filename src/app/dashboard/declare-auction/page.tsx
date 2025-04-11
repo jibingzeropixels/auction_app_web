@@ -54,6 +54,16 @@ type Player = {
   createdAt: string;
 };
 
+interface ApiPlayerType {
+  _id: string;
+  name?: string;
+  teamId?: string | null;
+  skills?: string[];
+  status?: string;
+  eventId: string;
+  email?: string;
+  createdAt?: string;
+}
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const getAuthHeaders = () => {
@@ -138,15 +148,15 @@ const DeclareAuctionPage = () => {
 
           const apiPlayers = await playersService.getAllPlayers();
           const eventPlayers: Player[] = apiPlayers
-            .map((apiPlayer: any) => ({
+            .map((apiPlayer: ApiPlayerType) => ({
               _id: apiPlayer._id,
               name: apiPlayer.name || "Unknown",
               teamId: apiPlayer.teamId ?? null,
               skills: apiPlayer.skills || [],
               status: apiPlayer.status || "available",
               eventId: apiPlayer.eventId,
-              email: apiPlayer.email,
-              createdAt: apiPlayer.createdAt,
+              email: apiPlayer.email || "",
+              createdAt: apiPlayer.createdAt || "",
             }))
             .filter((player: Player) => player.eventId === selectedEvent._id);
 
@@ -172,11 +182,14 @@ const DeclareAuctionPage = () => {
       : `${floorSize} - ${ceilSize}`;
   };
 
-  const handleSeasonChange = (_: any, value: Season | null) => {
+  const handleSeasonChange = (
+    _: React.SyntheticEvent,
+    value: Season | null
+  ) => {
     setSelectedSeason(value);
   };
 
-  const handleEventChange = (_: any, value: Event | null) => {
+  const handleEventChange = (_: React.SyntheticEvent, value: Event | null) => {
     setSelectedEvent(value);
   };
 

@@ -26,6 +26,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  SelectChangeEvent,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
@@ -42,6 +43,15 @@ interface Team {
   players: ApiPlayer[];
 }
 
+interface AuctionTeamBudget {
+  name: string;
+  _id: string;
+  teamId: string;
+  teamName: string;
+  remainingBudget: number;
+  playersBought: number;
+}
+
 const AdminAuctionView = () => {
   const searchParams = useSearchParams();
 
@@ -49,7 +59,7 @@ const AdminAuctionView = () => {
   const [auctionId, setAuctionId] = useState<string>("");
 
   const [teams, setTeams] = useState<Team[]>([]);
-  const [teamBudgetData, setTeamBudgetData] = useState<any[]>([]); // live team budget data
+  const [teamBudgetData, setTeamBudgetData] = useState<AuctionTeamBudget[]>([]); // live team budget data
   const [initialBudget, setInitialBudget] = useState<number>(0); // dynamic initial budget from API
   const [soldPlayers, setSoldPlayers] = useState<ApiPlayer[]>([]);
   const [currentPlayer, setCurrentPlayer] = useState<ApiPlayer | null>(null);
@@ -63,7 +73,7 @@ const AdminAuctionView = () => {
   const [auctionStatus, setAuctionStatus] = useState<
     "ready" | "live" | "paused" | "completed"
   >("ready");
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
+  // const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
   const [processedPlayerCount, setProcessedPlayerCount] = useState<number>(0);
 
   // Read auctionId and eventId from URL search parameters
@@ -93,12 +103,14 @@ const AdminAuctionView = () => {
       setTeamsLoading(true);
       try {
         const fetchedTeams = await teamsService.getAllTeams();
-        const formattedTeams: Team[] = fetchedTeams.map((team: any) => ({
-          _id: team._id,
-          name: team.name,
-          totalBudget: 0, // budget will come from the auctionService.getTeamBudget API
-          players: [],
-        }));
+        const formattedTeams: Team[] = fetchedTeams.map(
+          (team: AuctionTeamBudget) => ({
+            _id: team._id,
+            name: team.name,
+            totalBudget: 0, // budget will come from the auctionService.getTeamBudget API
+            players: [],
+          })
+        );
         setTeams(formattedTeams);
       } catch (err) {
         console.error("Error fetching teams:", err);
@@ -120,7 +132,7 @@ const AdminAuctionView = () => {
         const budgetData = (await auctionService.getTeamBudget(
           auctionId
         )) as unknown as {
-          teams: any[];
+          teams: AuctionTeamBudget[];
           initialBudget: number;
         };
         setTeamBudgetData(budgetData.teams);
@@ -168,39 +180,39 @@ const AdminAuctionView = () => {
     setSuccess("Auction resumed");
   };
 
-  const nextPlayer = async () => {
-    if (!eventId) {
-      setError("No event ID provided");
-      return;
-    }
-    if (!auctionId) {
-      setError("No auction ID provided");
-      return;
-    }
-    setLoading(true);
-    try {
-      const randomPlayer = await auctionService.getRandomPlayer(eventId);
-      setCurrentPlayer(randomPlayer);
-      setBidAmount(randomPlayer.basePrice?.toString() || "100");
-      setSelectedTeamId("");
-      setError("");
-      setCurrentPlayerIndex(currentPlayerIndex + 1);
-      setSuccess(
-        `Next player: ${randomPlayer.firstName} ${randomPlayer.lastName}`
-      );
-    } catch (err) {
-      console.error("Error fetching next player:", err);
-      setError("Failed to fetch next player. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const nextPlayer = async () => {
+  //   if (!eventId) {
+  //     setError("No event ID provided");
+  //     return;
+  //   }
+  //   if (!auctionId) {
+  //     setError("No auction ID provided");
+  //     return;
+  //   }
+  //   setLoading(true);
+  //   try {
+  //     const randomPlayer = await auctionService.getRandomPlayer(eventId);
+  //     setCurrentPlayer(randomPlayer);
+  //     setBidAmount(randomPlayer.basePrice?.toString() || "100");
+  //     setSelectedTeamId("");
+  //     setError("");
+  //     setCurrentPlayerIndex(currentPlayerIndex + 1);
+  //     setSuccess(
+  //       `Next player: ${randomPlayer.firstName} ${randomPlayer.lastName}`
+  //     );
+  //   } catch (err) {
+  //     console.error("Error fetching next player:", err);
+  //     setError("Failed to fetch next player. Please try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const restartAuction = () => {
     // Do not modify teams data here because budgets are shown separately.
     setSoldPlayers([]);
     setCurrentPlayer(null);
-    setCurrentPlayerIndex(0);
+    // setCurrentPlayerIndex(0);
     setProcessedPlayerCount(0);
     setBidAmount("");
     setSelectedTeamId("");
@@ -221,7 +233,7 @@ const AdminAuctionView = () => {
     }
     // Find live budget from teamBudgetData; if not available, fallback to the initialBudget from API.
     const teamBudget = teamBudgetData.find(
-      (b: any) => b.teamId === selectedTeamId
+      (b: AuctionTeamBudget) => b.teamId === selectedTeamId
     );
     const remainingBudget = teamBudget
       ? teamBudget.remainingBudget
@@ -235,7 +247,7 @@ const AdminAuctionView = () => {
     setConfirmDialogOpen(true);
   };
 
-  const handleSelectTeam = (event: any) => {
+  const handleSelectTeam = (event: SelectChangeEvent<string>) => {
     setSelectedTeamId(event.target.value);
   };
 
@@ -490,7 +502,8 @@ const AdminAuctionView = () => {
                               value={team._id}
                               disabled={
                                 (teamBudgetData.find(
-                                  (b: any) => b.teamId === team._id
+                                  (b: AuctionTeamBudget) =>
+                                    b.teamId === team._id
                                 )?.remainingBudget || initialBudget) <
                                 parseInt(bidAmount || "0")
                               }
@@ -687,7 +700,7 @@ const AdminAuctionView = () => {
                 </Typography>
               </Box>
             ) : (
-              teamBudgetData.map((budget: any) => {
+              teamBudgetData.map((budget: AuctionTeamBudget) => {
                 const team = teams.find((t) => t._id === budget.teamId);
                 if (!team) return null;
                 const remainingBudget = budget.remainingBudget;

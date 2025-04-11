@@ -70,24 +70,46 @@ export default function AddPlayerPage() {
   const initialEmail = searchParams.get("email") || "";
 
   // Parse "skills" from the URL if provided.
+  // ... other code like initialFirstName etc. ...
+
   const initialSkillsParam = searchParams.get("skills");
-  let initialSkills: { skillName: string; rating: number }[] = [];
+
+  // >>> THIS DECLARATION MUST BE HERE <<<
+  const initialSkills: { skillName: string; rating: number }[] = [];
+
   if (initialSkillsParam) {
+    // The block using .push() starts AFTER the declaration
     try {
-      const parsed = JSON.parse(initialSkillsParam);
+      const parsed: unknown = JSON.parse(initialSkillsParam);
       if (Array.isArray(parsed)) {
-        parsed.forEach((skillObj: any) => {
-          if (skillObj && typeof skillObj === "object") {
+        parsed.forEach((skillObj: unknown) => {
+          if (
+            skillObj &&
+            typeof skillObj === "object" &&
+            !Array.isArray(skillObj)
+          ) {
             Object.keys(skillObj).forEach((key) => {
-              initialSkills.push({ skillName: key, rating: skillObj[key] });
+              const rating = (skillObj as Record<string, unknown>)[key];
+              if (typeof rating === "number" && !isNaN(rating)) {
+                // >>> USAGE IS HERE, inside nested blocks <<<
+                initialSkills.push({ skillName: key, rating: rating });
+              } else {
+                console.warn(`Invalid rating type for skill "${key}":`, rating);
+              }
             });
+          } else {
+            console.warn("Parsed skill item is not a valid object:", skillObj);
           }
         });
+      } else {
+        console.warn("Parsed skills parameter is not an array:", parsed);
       }
     } catch (err) {
-      console.error("Failed to parse skills:", err);
+      console.error("Failed to parse skills parameter:", err);
     }
   }
+
+  // ... rest of the component, like the useState for formData ...
 
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
@@ -152,33 +174,43 @@ export default function AddPlayerPage() {
     };
   }, [initialEventId, formData.eventId]);
 
-  // When an event is selected (or when the events data updates), merge the skills.
   useEffect(() => {
-    if (formData.eventId) {
+    if (formData.eventId && events.length > 0) {
       const selectedEvent = events.find((ev) => ev._id === formData.eventId);
-      if (selectedEvent) {
-        // Determine the skills available from the selected event.
-        const eventSkills =
-          (selectedEvent.skills && selectedEvent.skills.map((s) => s.trim())) ||
-          [];
-        // For each event skill, check if a rating exists from URL or previous input.
-        const mergedSkills = eventSkills.map((skillName) => {
-          const existing = formData.skills.find(
-            (s) => s.skillName.toLowerCase() === skillName.toLowerCase()
-          );
-          return {
-            skillName,
-            rating: existing ? existing.rating : 0,
-          };
+
+      if (
+        selectedEvent?.skills &&
+        Array.isArray(selectedEvent.skills) &&
+        selectedEvent.skills.length > 0
+      ) {
+        const eventSkills = selectedEvent.skills
+          .map((s) => String(s || "").trim())
+          .filter(Boolean);
+
+        setFormData((prev) => {
+          const mergedSkills = eventSkills.map((skillName) => {
+            const existing = prev.skills.find(
+              (s) => s.skillName.toLowerCase() === skillName.toLowerCase()
+            );
+            return {
+              skillName,
+              rating: existing ? existing.rating : 0,
+            };
+          });
+
+          if (JSON.stringify(prev.skills) === JSON.stringify(mergedSkills)) {
+            return prev;
+          } else {
+            return { ...prev, skills: mergedSkills };
+          }
         });
-        // Update the state only if there is a difference.
-        setFormData((prev) => ({
-          ...prev,
-          skills: mergedSkills,
-        }));
       }
+    } else if (!formData.eventId && events.length > 0) {
+      setFormData((prev) => {
+        if (prev.skills.length === 0) return prev;
+        return { ...prev, skills: [] };
+      });
     }
-    // We deliberately depend on formData.eventId and events.
   }, [formData.eventId, events]);
 
   if (user?.role !== "superAdmin" && user?.role !== "eventAdmin") {
@@ -197,10 +229,7 @@ export default function AddPlayerPage() {
   };
 
   // Use the SelectChangeEvent type from MUI.
-  const handleSelectChange = (
-    event: SelectChangeEvent<string>,
-    child: React.ReactNode
-  ) => {
+  const handleSelectChange = (event: SelectChangeEvent<string>) => {
     const { name, value } = event.target;
     setFormData((prev) => {
       // When season changes, reset eventId and let the effect update skills later.
