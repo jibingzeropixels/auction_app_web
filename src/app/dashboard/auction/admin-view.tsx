@@ -28,6 +28,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  SelectChangeEvent,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
@@ -249,7 +250,7 @@ const AdminAuctionView = () => {
     setConfirmDialogOpen(true);
   };
 
-  const handleSelectTeam = (event: any) => {
+  const handleSelectTeam = (event: SelectChangeEvent<string>) => {
     setSelectedTeamId(event.target.value);
   };
 
