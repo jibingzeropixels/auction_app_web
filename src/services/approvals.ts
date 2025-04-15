@@ -10,44 +10,70 @@ const getAuthHeaders = () => {
 };
 
 export const approvalsService = {
-  // Get all approvals
-  getAllApprovals: async () => {
+  getAllApprovals: async (type: 'events' | 'teams') => {
     try {
-      const response = await fetch(`${API_BASE_URL}/approvals/getAllApprovals`, {
+      const apiUrl = `${API_BASE_URL}/approvals/getAllApprovals?type=${type}`;
+      console.log(`Calling getAllApprovals API for ${type}:`, apiUrl);
+      
+      const response = await fetch(apiUrl, {
         method: "GET",
         headers: getAuthHeaders(),
       });
 
+      console.log("API Response status:", response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch approvals");
+        throw new Error(`Failed to fetch ${type} approvals`);
       }
 
-      return await response.json();
+      const data = await response.json();
+      console.log(`Success response for ${type}:`, data);
+      
+      if (Array.isArray(data) && data.length === 0) {
+        return [];
+      }
+      
+      return data;
     } catch (error) {
-      console.error("Error fetching approvals:", error);
+      console.error(`Error fetching ${type} approvals:`, error);
       throw error;
     }
   },
-
-  // Update admin status (approve/reject)
+  
   updateAdminStatus: async (data: {
     userId: string;
+    requestId: string;
     status: 'approved' | 'rejected';
+    type: 'events' | 'teams';
   }) => {
     try {
+      const apiData = {
+        userId: data.userId,
+        attributeId: data.requestId,
+        attributeType: data.type === 'events' ? 'event' : 'team',
+        approved: data.status === 'approved'
+      };
+      
+      console.log("Calling updateAdminStatus API:", `${API_BASE_URL}/approvals/adminStatusUpdate`);
+      console.log("With data:", apiData);
+      
       const response = await fetch(`${API_BASE_URL}/approvals/adminStatusUpdate`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+        body: JSON.stringify(apiData),
       });
 
+      console.log("API Response status:", response.status);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update approval status");
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`Failed to update approval status: ${errorText}`);
       }
 
-      return await response.json();
+      const responseData = await response.json();
+      console.log("Success response:", responseData);
+      return responseData;
     } catch (error) {
       console.error("Error updating approval status:", error);
       throw error;

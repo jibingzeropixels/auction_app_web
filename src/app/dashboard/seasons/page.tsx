@@ -246,6 +246,7 @@ export default function SeasonsPage() {
             pagination
             initialState={{
               pagination: { paginationModel: { page: 0, pageSize: 10 } },
+              sorting: { sortModel: [{ field: "startDate", sort: "desc" }] },
             }}
             // Use the custom pagination via the "slots" prop
             slots={{

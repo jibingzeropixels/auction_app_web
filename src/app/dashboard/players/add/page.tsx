@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import {
@@ -18,63 +18,98 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent,
-  RadioGroup,
+  FormHelperText,
+  Switch,
   FormControlLabel,
-  Radio,
-  FormLabel,
-  Avatar,
-  IconButton,
-  Checkbox
+  Grid,
 } from "@mui/material";
+import Rating from "@mui/material/Rating";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { seasonsService } from "@/services/seasons";
 import { eventsService } from "@/services/events";
-import { teamsService } from "@/services/teams";
-
-type SkillLevel = "Beginner" | "Intermediate" | "Expert" | "Pro";
+import { playersService } from "@/services/players-service";
+import { SelectChangeEvent } from "@mui/material/Select";
 
 interface FormData {
   firstName: string;
   lastName: string;
   email: string;
-  seasonId: string;
+  phone: string;
+  // Ratings for skills: each object maps a skill name to its rating.
+  skills: { skillName: string; rating: number }[];
+  isIcon: boolean;
   eventId: string;
-  skillLevel: SkillLevel;
-  remarks: string;
-  isMVP: boolean;
-  photo: File | null;
+  seasonId: string;
 }
-
 interface Season {
   _id: string;
   name: string;
 }
-
 interface Event {
   _id: string;
   name: string;
   seasonId: string;
-}
-
-interface Team {
-  _id: string;
-  name: string;
-  eventId: string;
+  // event-skills defined by admin; may be null.
+  skills: string[] | null;
 }
 
 export default function AddPlayerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const editPlayerId = searchParams.get("edit");
-  
-  const prepopulatedName = searchParams.get("name") || "";
-  const prepopulatedSeasonId = searchParams.get("seasonId") || "";
-  const prepopulatedEventId = searchParams.get("eventId") || "";
-  const prepopulatedTeamId = searchParams.get("teamId") || "";
-  const prepopulatedSkillLevel = (searchParams.get("skillLevel") as SkillLevel) || "Beginner";
-  const prepopulatedRemarks = searchParams.get("remarks") || "";
+
+  // Obtain first/last name either individually or via the "name" parameter.
+  let initialFirstName = searchParams.get("firstName") || "";
+  let initialLastName = searchParams.get("lastName") || "";
+  const nameParam = searchParams.get("name");
+  if (nameParam && !initialFirstName && !initialLastName) {
+    const parts = nameParam.split(" ");
+    initialFirstName = parts[0] || "";
+    initialLastName = parts.slice(1).join(" ") || "";
+  }
+  const initialEventId = searchParams.get("eventId") || "";
+  const initialEmail = searchParams.get("email") || "";
+
+  // Parse "skills" from the URL if provided.
+  // ... other code like initialFirstName etc. ...
+
+  const initialSkillsParam = searchParams.get("skills");
+
+  // >>> THIS DECLARATION MUST BE HERE <<<
+  const initialSkills: { skillName: string; rating: number }[] = [];
+
+  if (initialSkillsParam) {
+    // The block using .push() starts AFTER the declaration
+    try {
+      const parsed: unknown = JSON.parse(initialSkillsParam);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((skillObj: unknown) => {
+          if (
+            skillObj &&
+            typeof skillObj === "object" &&
+            !Array.isArray(skillObj)
+          ) {
+            Object.keys(skillObj).forEach((key) => {
+              const rating = (skillObj as Record<string, unknown>)[key];
+              if (typeof rating === "number" && !isNaN(rating)) {
+                // >>> USAGE IS HERE, inside nested blocks <<<
+                initialSkills.push({ skillName: key, rating: rating });
+              } else {
+                console.warn(`Invalid rating type for skill "${key}":`, rating);
+              }
+            });
+          } else {
+            console.warn("Parsed skill item is not a valid object:", skillObj);
+          }
+        });
+      } else {
+        console.warn("Parsed skills parameter is not an array:", parsed);
+      }
+    } catch (err) {
+      console.error("Failed to parse skills parameter:", err);
+    }
+  }
+
+  // ... rest of the component, like the useState for formData ...
 
   const { user } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
@@ -82,232 +117,227 @@ export default function AddPlayerPage() {
   const [error, setError] = useState<string>("");
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
+  // Initialize state. Note: we seed the skills from the URL.
   const [formData, setFormData] = useState<FormData>({
-    firstName: "",
-    lastName: "",
-    email: "",
+    firstName: initialFirstName,
+    lastName: initialLastName,
+    email: initialEmail,
+    phone: searchParams.get("phone") || "",
+    skills: initialSkills,
+    isIcon: false,
+    eventId: initialEventId,
     seasonId: "",
-    eventId: "",
-    skillLevel: "Beginner",
-    remarks: "",
-    isMVP: false,
-    photo: null
   });
 
+  // Fetch seasons and events.
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
       try {
-        const seasonsData = await seasonsService.getAllSeasons();
-        setSeasons(seasonsData);
-        const eventsData = await eventsService.getAllEvents();
-        setEvents(eventsData);
-        const teamsData = await teamsService.getAllTeams();
-        setTeams(teamsData);
+        const [seasonsData, eventsData] = await Promise.all([
+          seasonsService.getAllSeasons(),
+          eventsService.getAllEvents(),
+        ]);
+
+        if (isMounted) {
+          setSeasons(seasonsData);
+          setEvents(eventsData);
+
+          // If an event is provided via URL or formData, update the season accordingly.
+          const targetEventId = initialEventId || formData.eventId;
+          if (targetEventId) {
+            const foundEvent = eventsData.find(
+              (ev: Event) => ev._id === targetEventId
+            );
+            if (foundEvent) {
+              setFormData((prev) => ({
+                ...prev,
+                seasonId: foundEvent.seasonId,
+                eventId: foundEvent._id,
+              }));
+            } else {
+              console.warn(`EventId "${targetEventId}" not found.`);
+            }
+          }
+        }
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching seasons/events:", err);
+        if (isMounted) {
+          setError("Failed to load season/event data.");
+        }
       }
     }
     fetchData();
-  }, []);
+    return () => {
+      isMounted = false;
+    };
+  }, [initialEventId, formData.eventId]);
 
   useEffect(() => {
-    if (editPlayerId) {
-      const nameParts = prepopulatedName.split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      
-      setFormData({
-        firstName,
-        lastName,
-        email: searchParams.get("email") || "",
-        seasonId: prepopulatedSeasonId,
-        eventId: prepopulatedEventId,
-        skillLevel: prepopulatedSkillLevel,
-        remarks: prepopulatedRemarks,
-        isMVP: searchParams.get("isMVP") === "true",
-        photo: null
+    if (formData.eventId && events.length > 0) {
+      const selectedEvent = events.find((ev) => ev._id === formData.eventId);
+
+      if (
+        selectedEvent?.skills &&
+        Array.isArray(selectedEvent.skills) &&
+        selectedEvent.skills.length > 0
+      ) {
+        const eventSkills = selectedEvent.skills
+          .map((s) => String(s || "").trim())
+          .filter(Boolean);
+
+        setFormData((prev) => {
+          const mergedSkills = eventSkills.map((skillName) => {
+            const existing = prev.skills.find(
+              (s) => s.skillName.toLowerCase() === skillName.toLowerCase()
+            );
+            return {
+              skillName,
+              rating: existing ? existing.rating : 0,
+            };
+          });
+
+          if (JSON.stringify(prev.skills) === JSON.stringify(mergedSkills)) {
+            return prev;
+          } else {
+            return { ...prev, skills: mergedSkills };
+          }
+        });
+      }
+    } else if (!formData.eventId && events.length > 0) {
+      setFormData((prev) => {
+        if (prev.skills.length === 0) return prev;
+        return { ...prev, skills: [] };
       });
-      
     }
-  }, [
-    editPlayerId,
-    prepopulatedName,
-    prepopulatedSeasonId,
-    prepopulatedEventId,
-    prepopulatedSkillLevel,
-    prepopulatedRemarks,
-    searchParams
-  ]);
+  }, [formData.eventId, events]);
+
+  if (user?.role !== "superAdmin" && user?.role !== "eventAdmin") {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h6">Permission Denied.</Typography>
+      </Box>
+    );
+  }
 
   const handleTextChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (e: SelectChangeEvent<string>) => {
-    const { name, value } = e.target;
-    
-    if (name === "seasonId") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-        eventId: "", 
-        teamId: ""   
-      }));
-    } else if (name === "eventId") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-        teamId: ""   
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        setError("Please upload a valid image file (JPG, PNG, or WebP)");
-        return;
+  // Use the SelectChangeEvent type from MUI.
+  const handleSelectChange = (event: SelectChangeEvent<string>) => {
+    const { name, value } = event.target;
+    setFormData((prev) => {
+      // When season changes, reset eventId and let the effect update skills later.
+      const next = { ...prev, [name]: value };
+      if (name === "seasonId") {
+        next.eventId = "";
+        next.skills = []; // clear any previous ratings
       }
-      
-      if (file.size > 2 * 1024 * 1024) {
-        setError("Image size should be less than 2MB");
-        return;
-      }
-      
-      setFormData((prev) => ({
-        ...prev,
-        photo: file
-      }));
-      
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      setError("");
-    }
+      return next;
+    });
   };
 
+  // Update a rating for a specific skill.
+  const handleRatingChange = (skillName: string, rating: number) => {
+    setFormData((prev) => {
+      const existing = prev.skills.find((s) => s.skillName === skillName);
+      let updated: typeof prev.skills;
+      if (existing) {
+        updated = prev.skills.map((s) =>
+          s.skillName === skillName ? { ...s, rating } : s
+        );
+      } else {
+        updated = [...prev.skills, { skillName, rating }];
+      }
+      return { ...prev, skills: updated };
+    });
+  };
+
+  // Helper function to validate the form.
   const validateForm = (): boolean => {
+    setError("");
     if (!formData.firstName.trim()) {
       setError("First name is required");
       return false;
     }
-    
     if (!formData.lastName.trim()) {
       setError("Last name is required");
       return false;
     }
-    
-    if (!formData.email.trim()) {
-      setError("Email is required");
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setError("Valid email is required");
       return false;
     }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address");
+    if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
+      setError("Enter 10 digits for phone (if provided)");
       return false;
     }
-    
-    if (!formData.seasonId) {
-      setError("Season is required");
+    // Ensure that ratings exist for each skill being rendered.
+    if (renderSkills.length && formData.skills.length !== renderSkills.length) {
+      setError("Please rate all skills");
       return false;
     }
-    
     if (!formData.eventId) {
-      setError("Event is required");
+      setError("Event selection is required");
       return false;
     }
-    
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setSuccess("");
-
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     setLoading(true);
 
-    try {
-      const skills = ["skill1"]; 
-      
-      const playerData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        eventId: formData.eventId,
-        skills: skills,
-        isIcon: formData.isMVP
-      };
+    // Transform skills into the payload format:
+    // For example: [ { batting: 3 }, { bowling: 4 } ]
+    const skillsPayload = formData.skills.map((s) => ({
+      [s.skillName]: s.rating,
+    }));
 
-      if (editPlayerId) {
-        console.log("Updating player:", { id: editPlayerId, ...playerData });
-        
-        if (formData.photo) {
-          const fileData = new FormData();
-          fileData.append('playerId', editPlayerId);
-          fileData.append('photo', formData.photo);
-          
-          console.log("Uploading photo for player:", editPlayerId);
-        }
-        
+    const playerData = {
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone || null,
+      skills: skillsPayload,
+      isIcon: formData.isIcon,
+      eventId: formData.eventId,
+    };
+
+    try {
+      if (searchParams.get("edit")) {
+        await playersService.updatePlayer({
+          playerId: searchParams.get("edit") as string,
+          ...playerData,
+        });
         setSuccess("Player updated successfully");
       } else {
-        console.log("Creating new player:", playerData);
-        
-        if (formData.photo) {
-          const fileData = new FormData();
-          fileData.append('photo', formData.photo);
-          
-          console.log("Uploading photo for new player");
-        }
-        
+        await playersService.createPlayer(playerData);
         setSuccess("Player created successfully");
-        
         setFormData({
           firstName: "",
           lastName: "",
           email: "",
-          seasonId: "",
+          phone: "",
+          skills: [],
+          isIcon: false,
           eventId: "",
-          skillLevel: "Beginner",
-          remarks: "",
-          isMVP: false,
-          photo: null
+          seasonId: "",
         });
-        setPhotoPreview(null);
       }
-      
       setTimeout(() => {
         router.push("/dashboard/players");
-      }, 2000);
+      }, 1500);
     } catch (err: unknown) {
-      console.error("Error:", err);
-      setError("Failed to save player. Please try again.");
+      console.error("Error saving player:", err);
+      setError(err instanceof Error ? err.message : "Failed to save player.");
     } finally {
       setLoading(false);
     }
@@ -318,25 +348,42 @@ export default function AddPlayerPage() {
   };
 
   const handleLinkClick = (
-    e: React.MouseEvent<HTMLAnchorElement>,
+    event: React.MouseEvent<HTMLAnchorElement, MouseEvent>,
     path: string
   ) => {
-    e.preventDefault();
+    event.preventDefault();
     router.push(path);
   };
 
+  // Filter events based on the selected season.
   const filteredEvents = formData.seasonId
-    ? events.filter((event) => event.seasonId === formData.seasonId)
+    ? events.filter((ev) => ev?._id && ev.seasonId === formData.seasonId)
     : [];
 
+  // Ensure that the current eventId is valid.
+  const currentEventValue =
+    formData.eventId &&
+    filteredEvents.some((evt) => evt._id === formData.eventId)
+      ? formData.eventId
+      : "";
+
+  // Determine which skills to render:
+  // Prefer the selected event’s skills. If not available, use the ones in formData.
+  const selectedEvent = events.find((ev) => ev._id === formData.eventId);
+  const renderSkills: string[] =
+    selectedEvent && selectedEvent.skills && selectedEvent.skills.length > 0
+      ? selectedEvent.skills.map((s) => s.trim())
+      : formData.skills.map((s) => s.skillName);
+
   return (
-    <Container maxWidth="sm">
-      <Box sx={{ mb: 4 }}>
+    <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ mb: 3 }}>
         <Breadcrumbs
           separator={<NavigateNextIcon fontSize="small" />}
           aria-label="breadcrumb"
         >
           <Link
+            underline="hover"
             color="inherit"
             href="/dashboard/players"
             onClick={(e) => handleLinkClick(e, "/dashboard/players")}
@@ -344,83 +391,41 @@ export default function AddPlayerPage() {
             Players
           </Link>
           <Typography color="text.primary">
-            {editPlayerId ? "Edit Player" : "Add Player"}
+            {searchParams.get("edit") ? "Edit Player" : "Add Player"}
           </Typography>
         </Breadcrumbs>
       </Box>
 
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h5" component="h1" gutterBottom>
-          {editPlayerId ? "Edit Player" : "Add New Player"}
+      <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
+        <Typography variant="h5" component="h1" gutterBottom sx={{ mb: 3 }}>
+          {searchParams.get("edit") ? "Edit Player" : "Add New Player"}
         </Typography>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError("")}>
             {error}
           </Alert>
         )}
-        
         {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
+          <Alert
+            severity="success"
+            sx={{ mb: 3 }}
+            onClose={() => setSuccess("")}
+          >
             {success}
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box component="form" onSubmit={handleSubmit} noValidate>
           <Stack spacing={3}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
-              {photoPreview ? (
-                <Box sx={{ position: 'relative' }}>
-                  <Avatar 
-                    src={photoPreview} 
-                    sx={{ width: 100, height: 100, mb: 1 }}
-                  />
-                  <IconButton
-                    component="label"
-                    sx={{ 
-                      position: 'absolute', 
-                      bottom: 0, 
-                      right: -15, 
-                      bgcolor: 'primary.main',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'primary.dark'
-                      },
-                      width: 36,
-                      height: 36
-                    }}
-                  >
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handlePhotoChange}
-                    />
-                    <CloudUploadIcon fontSize="small" />
-                  </IconButton>
-                </Box>
-              ) : (
-                <Button
-                  component="label"
-                  variant="outlined"
-                  startIcon={<CloudUploadIcon />}
-                  sx={{ mb: 2 }}
-                >
-                  Upload Photo
-                  <input
-                    type="file"
-                    hidden
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handlePhotoChange}
-                  />
-                </Button>
-              )}
-              <Typography variant="caption" color="text.secondary">
-                Supported formats: JPG, PNG (max 2MB)
-              </Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            {/* Name Fields */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <TextField
                 required
                 fullWidth
@@ -429,10 +434,9 @@ export default function AddPlayerPage() {
                 label="First Name"
                 value={formData.firstName}
                 onChange={handleTextChange}
-                error={error.includes("first name") || error.includes("First name")}
-                helperText={error.includes("first name") || error.includes("First name") ? "First name is required" : ""}
+                error={error.includes("First name")}
+                disabled={loading}
               />
-              
               <TextField
                 required
                 fullWidth
@@ -441,11 +445,12 @@ export default function AddPlayerPage() {
                 label="Last Name"
                 value={formData.lastName}
                 onChange={handleTextChange}
-                error={error.includes("last name") || error.includes("Last name")}
-                helperText={error.includes("last name") || error.includes("Last name") ? "Last name is required" : ""}
+                error={error.includes("Last name")}
+                disabled={loading}
               />
             </Box>
-            
+
+            {/* Contact Fields */}
             <TextField
               required
               fullWidth
@@ -455,27 +460,60 @@ export default function AddPlayerPage() {
               type="email"
               value={formData.email}
               onChange={handleTextChange}
-              error={error.includes("email") || error.includes("Email")}
+              error={error.includes("email")}
+              disabled={loading}
+            />
+            <TextField
+              fullWidth
+              id="phone"
+              name="phone"
+              label="Phone Number"
+              type="tel"
+              value={formData.phone}
+              onChange={handleTextChange}
+              error={error.includes("phone")}
               helperText={
-                error.includes("valid email") 
-                  ? "Please enter a valid email address" 
-                  : error.includes("email") || error.includes("Email") 
-                    ? "Email is required" 
-                    : ""
+                error.includes("phone")
+                  ? "Invalid (10 digits required)"
+                  : "Optional, 10 digits"
               }
+              disabled={loading}
             />
 
-            <FormControl fullWidth required error={error.includes("Season")}>
-              <InputLabel id="season-label">Season</InputLabel>
+            {/* Icon Switch */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.isIcon}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, isIcon: e.target.checked }))
+                  }
+                  name="isIcon"
+                  color="primary"
+                  disabled={loading}
+                />
+              }
+              label="Icon Player (Featured)"
+              sx={{ justifyContent: "flex-start" }}
+            />
+
+            {/* Season Selector */}
+            <FormControl
+              fullWidth
+              required
+              error={!formData.seasonId && error.includes("event")}
+            >
+              <InputLabel id="season-label">Season *</InputLabel>
               <Select
                 labelId="season-label"
                 id="seasonId"
                 name="seasonId"
                 value={formData.seasonId}
-                label="Season"
+                label="Season *"
                 onChange={handleSelectChange}
+                disabled={loading}
               >
-                <MenuItem value="">
+                <MenuItem value="" disabled>
                   <em>Select a Season</em>
                 </MenuItem>
                 {seasons.map((season) => (
@@ -484,91 +522,87 @@ export default function AddPlayerPage() {
                   </MenuItem>
                 ))}
               </Select>
-              {error.includes("Season") && (
-                <Typography
-                  variant="caption"
-                  color="error"
-                  sx={{ mt: 0.5, ml: 1.5 }}
-                >
-                  Season is required
-                </Typography>
-              )}
             </FormControl>
 
-            <FormControl fullWidth required error={error.includes("Event")}>
-              <InputLabel id="event-label">Event</InputLabel>
+            {/* Event Selector */}
+            <FormControl fullWidth required error={error.includes("event")}>
+              <InputLabel id="event-label">Event *</InputLabel>
               <Select
                 labelId="event-label"
                 id="eventId"
                 name="eventId"
-                value={formData.eventId}
-                label="Event"
+                value={currentEventValue}
+                label="Event *"
                 onChange={handleSelectChange}
-                disabled={!formData.seasonId}
+                disabled={
+                  loading || !formData.seasonId || filteredEvents.length === 0
+                }
               >
-                <MenuItem value="">
-                  <em>Select an Event</em>
+                <MenuItem value="" disabled>
+                  <em>
+                    {formData.seasonId
+                      ? "Select an Event"
+                      : "Select Season first"}
+                  </em>
                 </MenuItem>
-                {filteredEvents.map((event) => (
-                  <MenuItem key={event._id} value={event._id}>
-                    {event.name}
+                {filteredEvents.map((evt) => (
+                  <MenuItem key={evt._id} value={evt._id}>
+                    {evt.name}
                   </MenuItem>
                 ))}
+                {formData.seasonId && filteredEvents.length === 0 && (
+                  <MenuItem value="" disabled>
+                    <em>No events for this season</em>
+                  </MenuItem>
+                )}
               </Select>
-              {error.includes("Event") && (
-                <Typography
-                  variant="caption"
-                  color="error"
-                  sx={{ mt: 0.5, ml: 1.5 }}
-                >
-                  Event is required
+              <FormHelperText error={error.includes("event")}>
+                {error.includes("event")
+                  ? "Event required"
+                  : !formData.seasonId
+                  ? "Select season first"
+                  : ""}
+              </FormHelperText>
+            </FormControl>
+
+            {/* Skills Rating Inputs */}
+            {renderSkills.length > 0 && (
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  Rate Skills (1–5):
                 </Typography>
-              )}
-            </FormControl>
+                <Grid container spacing={2}>
+                  {renderSkills.map((skill) => {
+                    // Use the merged rating from formData.
+                    const currentRating =
+                      formData.skills.find(
+                        (s) => s.skillName.toLowerCase() === skill.toLowerCase()
+                      )?.rating || 0;
+                    return (
+                      <Grid item xs={12} key={skill}>
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="space-between"
+                        >
+                          <Typography>{skill}</Typography>
+                          <Rating
+                            name={`rating-${skill}`}
+                            value={currentRating}
+                            onChange={(_, value) =>
+                              handleRatingChange(skill, value || 0)
+                            }
+                            max={5}
+                          />
+                        </Box>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            )}
 
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Skill Level</FormLabel>
-              <RadioGroup
-                row
-                name="skillLevel"
-                value={formData.skillLevel}
-                onChange={handleTextChange}
-              >
-                <FormControlLabel value="Beginner" control={<Radio />} label="Beginner" />
-                <FormControlLabel value="Intermediate" control={<Radio />} label="Intermediate" />
-                <FormControlLabel value="Expert" control={<Radio />} label="Expert" />
-                <FormControlLabel value="Pro" control={<Radio />} label="Pro" />
-              </RadioGroup>
-            </FormControl>
-            
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.isMVP}
-                  onChange={(e) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      isMVP: e.target.checked
-                    }));
-                  }}
-                  name="isMVP"
-                />
-              }
-              label="Mark as Premium Player"
-            />
-
-            <TextField
-              fullWidth
-              id="remarks"
-              name="remarks"
-              label="Remarks"
-              multiline
-              rows={4}
-              value={formData.remarks}
-              onChange={handleTextChange}
-              placeholder="Add any additional notes about the player"
-            />
-
+            {/* Action Buttons */}
             <Box
               sx={{
                 display: "flex",
@@ -580,6 +614,7 @@ export default function AddPlayerPage() {
               <Button
                 variant="outlined"
                 onClick={handleCancel}
+                disabled={loading}
                 sx={{ minWidth: "100px" }}
               >
                 Cancel
@@ -589,13 +624,13 @@ export default function AddPlayerPage() {
                 variant="contained"
                 color="primary"
                 disabled={loading}
-                sx={{ minWidth: "100px" }}
+                sx={{ minWidth: "120px" }}
               >
                 {loading
-                  ? editPlayerId
+                  ? searchParams.get("edit")
                     ? "Updating..."
                     : "Creating..."
-                  : editPlayerId
+                  : searchParams.get("edit")
                   ? "Update Player"
                   : "Add Player"}
               </Button>

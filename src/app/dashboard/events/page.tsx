@@ -38,6 +38,7 @@ type Event = {
   startDate: string;
   endDate: string;
   seasonId: string;
+  skills?: string[]; // New: include skills field (optional)
 };
 
 export default function EventsPage() {
@@ -118,9 +119,9 @@ export default function EventsPage() {
     }
   };
 
-  // When editing an event, pass full event details as query parameters.
+  // When editing an event, pass full event details as query parameters (including skills).
   const handleEdit = (row: Event) => {
-    const { _id, name, desc, startDate, endDate, seasonId } = row;
+    const { _id, name, desc, startDate, endDate, seasonId, skills } = row;
     // Format dates to YYYY-MM-DD (if in ISO string format).
     const formattedStartDate = startDate.split("T")[0];
     const formattedEndDate = endDate.split("T")[0];
@@ -131,7 +132,9 @@ export default function EventsPage() {
         formattedStartDate
       )}&endDate=${encodeURIComponent(
         formattedEndDate
-      )}&seasonId=${encodeURIComponent(seasonId)}`
+      )}&seasonId=${encodeURIComponent(seasonId)}&skills=${encodeURIComponent(
+        JSON.stringify(skills || [])
+      )}`
     );
   };
 
@@ -313,6 +316,7 @@ export default function EventsPage() {
             pagination
             initialState={{
               pagination: { paginationModel: { page: 0, pageSize: 10 } },
+              sorting: { sortModel: [{ field: "startDate", sort: "desc" }] },
             }}
             // Use the custom pagination via the "slots" prop
             slots={{
