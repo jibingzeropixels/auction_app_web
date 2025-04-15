@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -34,7 +36,9 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import PlayerTradingCard from "@/components/PlayerTradingCard";
 import { teamsService } from "@/services/teams";
 import { auctionService } from "@/services/auction-service";
+import { playersService } from "@/services/players-service";
 import { ApiPlayer } from "@/types/player";
+import PlayersByStatusPopup from "./PlayersByStatusPopup";
 
 interface Team {
   _id: string;
@@ -55,28 +59,40 @@ interface AuctionTeamBudget {
 const AdminAuctionView = () => {
   const searchParams = useSearchParams();
 
-  const [eventId, setEventId] = useState<string>(""); // default is empty now
+  // Auction & event IDs from URL
+  const [eventId, setEventId] = useState<string>("");
   const [auctionId, setAuctionId] = useState<string>("");
 
+  // Teams and budgets state
   const [teams, setTeams] = useState<Team[]>([]);
-  const [teamBudgetData, setTeamBudgetData] = useState<AuctionTeamBudget[]>([]); // live team budget data
-  const [initialBudget, setInitialBudget] = useState<number>(0); // dynamic initial budget from API
-  const [soldPlayers, setSoldPlayers] = useState<ApiPlayer[]>([]);
+  const [teamBudgetData, setTeamBudgetData] = useState<AuctionTeamBudget[]>([]);
+  const [initialBudget, setInitialBudget] = useState<number>(0);
+
+  // Auction state
   const [currentPlayer, setCurrentPlayer] = useState<ApiPlayer | null>(null);
   const [bidAmount, setBidAmount] = useState<string>("");
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [teamsLoading, setTeamsLoading] = useState<boolean>(true);
+  const [soldPlayers, setSoldPlayers] = useState<ApiPlayer[]>([]);
   const [auctionStatus, setAuctionStatus] = useState<
     "ready" | "live" | "paused" | "completed"
   >("ready");
-  // const [currentPlayerIndex, setCurrentPlayerIndex] = useState<number>(0);
   const [processedPlayerCount, setProcessedPlayerCount] = useState<number>(0);
 
-  // Read auctionId and eventId from URL search parameters
+  // UI & errors
+  const [loading, setLoading] = useState<boolean>(false);
+  const [teamsLoading, setTeamsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
+
+  // Confirm dialog for selling a player
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState<boolean>(false);
+
+  // State for the upcoming players popup
+  const [showPopup, setShowPopup] = useState<boolean>(false);
+  const [allPlayers, setAllPlayers] = useState<ApiPlayer[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState<boolean>(false);
+
+  // Read auctionId and eventId from the URL parameters
   useEffect(() => {
     const urlAuctionId = searchParams.get("auctionId");
     if (urlAuctionId) {
@@ -90,14 +106,13 @@ const AdminAuctionView = () => {
     } else {
       setError((prev) =>
         prev
-          ? prev + " Also, no event ID provided in URL."
+          ? prev + " Also, no event ID provided in the URL."
           : "No event ID provided in URL."
       );
     }
   }, [searchParams]);
 
-  // Fetch teams data from teamsService.
-  // The teams' totalBudget is not used for live calculations.
+  // Fetch teams from teamsService
   useEffect(() => {
     const fetchTeams = async () => {
       setTeamsLoading(true);
@@ -107,7 +122,7 @@ const AdminAuctionView = () => {
           (team: AuctionTeamBudget) => ({
             _id: team._id,
             name: team.name,
-            totalBudget: 0, // budget will come from the auctionService.getTeamBudget API
+            totalBudget: 0, // will be updated via teamBudgetData
             players: [],
           })
         );
@@ -123,8 +138,7 @@ const AdminAuctionView = () => {
     fetchTeams();
   }, []);
 
-  // Fetch live team budget data from auctionService.
-  // The API returns an object with { teams: [...], initialBudget: number }
+  // Fetch live team budget data from auctionService
   useEffect(() => {
     const updateTeamBudgets = async () => {
       if (!auctionId) return;
@@ -145,6 +159,26 @@ const AdminAuctionView = () => {
     updateTeamBudgets();
   }, [auctionId, currentPlayer]);
 
+  // Fetch players only when upcoming popup is open and eventId is defined.
+  useEffect(() => {
+    if (!showPopup || !eventId) return;
+    setLoadingPlayers(true);
+    playersService
+      .getAllPlayers()
+      .then((players) => {
+        const filtered = players.filter((p) => p.eventId === eventId);
+        setAllPlayers(filtered);
+      })
+      .catch((err) => console.error("Failed to load players", err))
+      .finally(() => setLoadingPlayers(false));
+  }, [showPopup, eventId]);
+
+  // Group players based on status
+  const upcomingPlayers = allPlayers.filter((p) => p.soldStatus === "pending");
+  const unsoldPlayers = allPlayers.filter((p) => p.soldStatus === "unsold");
+  const soldPlayersList = allPlayers.filter((p) => p.soldStatus === "sold");
+
+  // Auction functions
   const startAuction = async () => {
     if (!eventId) {
       setError("No event ID provided");
@@ -180,39 +214,9 @@ const AdminAuctionView = () => {
     setSuccess("Auction resumed");
   };
 
-  // const nextPlayer = async () => {
-  //   if (!eventId) {
-  //     setError("No event ID provided");
-  //     return;
-  //   }
-  //   if (!auctionId) {
-  //     setError("No auction ID provided");
-  //     return;
-  //   }
-  //   setLoading(true);
-  //   try {
-  //     const randomPlayer = await auctionService.getRandomPlayer(eventId);
-  //     setCurrentPlayer(randomPlayer);
-  //     setBidAmount(randomPlayer.basePrice?.toString() || "100");
-  //     setSelectedTeamId("");
-  //     setError("");
-  //     setCurrentPlayerIndex(currentPlayerIndex + 1);
-  //     setSuccess(
-  //       `Next player: ${randomPlayer.firstName} ${randomPlayer.lastName}`
-  //     );
-  //   } catch (err) {
-  //     console.error("Error fetching next player:", err);
-  //     setError("Failed to fetch next player. Please try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const restartAuction = () => {
-    // Do not modify teams data here because budgets are shown separately.
     setSoldPlayers([]);
     setCurrentPlayer(null);
-    // setCurrentPlayerIndex(0);
     setProcessedPlayerCount(0);
     setBidAmount("");
     setSelectedTeamId("");
@@ -231,7 +235,6 @@ const AdminAuctionView = () => {
       setError("Please enter a valid bid amount");
       return;
     }
-    // Find live budget from teamBudgetData; if not available, fallback to the initialBudget from API.
     const teamBudget = teamBudgetData.find(
       (b: AuctionTeamBudget) => b.teamId === selectedTeamId
     );
@@ -316,12 +319,8 @@ const AdminAuctionView = () => {
 
   const handleMarkUnsold = async () => {
     if (!currentPlayer) return;
-    if (!auctionId) {
-      setError("No auction ID provided");
-      return;
-    }
-    if (!eventId) {
-      setError("No event ID provided");
+    if (!auctionId || !eventId) {
+      setError("No auction or event ID provided");
       return;
     }
     setLoading(true);
@@ -375,6 +374,7 @@ const AdminAuctionView = () => {
         Auction Management
       </Typography>
 
+      {/* Header Paper with auction control buttons and upcoming players button */}
       <Paper
         sx={{ p: 2, mb: 3, display: "flex", alignItems: "center", gap: 2 }}
       >
@@ -389,7 +389,6 @@ const AdminAuctionView = () => {
             Start Auction
           </Button>
         )}
-
         {auctionStatus === "live" && (
           <Button
             variant="outlined"
@@ -400,7 +399,6 @@ const AdminAuctionView = () => {
             Pause Auction
           </Button>
         )}
-
         {auctionStatus === "paused" && (
           <Button
             variant="contained"
@@ -411,31 +409,45 @@ const AdminAuctionView = () => {
             Resume Auction
           </Button>
         )}
-
-        <Button
-          variant="outlined"
-          color="warning"
-          startIcon={<ReplayIcon />}
-          onClick={restartAuction}
-          sx={{ ml: "auto" }}
-          disabled={teamsLoading || loading}
+        {/* Right-most controls */}
+        <Box
+          sx={{
+            marginLeft: "auto",
+            display: "flex",
+            gap: 2,
+            alignItems: "center",
+          }}
         >
-          Reset Auction
-        </Button>
-
-        <Chip
-          label={`Auction ${auctionStatus.toUpperCase()}`}
-          color={
-            auctionStatus === "ready"
-              ? "default"
-              : auctionStatus === "live"
-              ? "success"
-              : auctionStatus === "paused"
-              ? "warning"
-              : "error"
-          }
-          variant="outlined"
-        />
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => setShowPopup(true)}
+          >
+            Upcoming Players
+          </Button>
+          <Button
+            variant="outlined"
+            color="warning"
+            startIcon={<ReplayIcon />}
+            onClick={restartAuction}
+            disabled={teamsLoading || loading}
+          >
+            Reset Auction
+          </Button>
+          <Chip
+            label={`Auction ${auctionStatus.toUpperCase()}`}
+            color={
+              auctionStatus === "ready"
+                ? "default"
+                : auctionStatus === "live"
+                ? "success"
+                : auctionStatus === "paused"
+                ? "warning"
+                : "error"
+            }
+            variant="outlined"
+          />
+        </Box>
       </Paper>
 
       {error && (
@@ -443,26 +455,24 @@ const AdminAuctionView = () => {
           {error}
         </Alert>
       )}
-
       {success && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {success}
         </Alert>
       )}
-
       {teamsLoading && (
         <Alert severity="info" sx={{ mb: 2 }}>
           Loading teams data...
         </Alert>
       )}
 
+      {/* Main grid for current player, auction progress, and team budgets */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={7}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Current Player
             </Typography>
-
             {currentPlayer ? (
               <Box>
                 <Grid container spacing={3}>
@@ -474,7 +484,6 @@ const AdminAuctionView = () => {
                   >
                     <PlayerTradingCard player={currentPlayer} />
                   </Grid>
-
                   <Grid item xs={12} md={7}>
                     <Box sx={{ mb: 3 }}>
                       <FormControl
@@ -514,7 +523,6 @@ const AdminAuctionView = () => {
                         </Select>
                       </FormControl>
                     </Box>
-
                     <Box sx={{ mb: 3 }}>
                       <TextField
                         fullWidth
@@ -529,7 +537,6 @@ const AdminAuctionView = () => {
                         disabled={auctionStatus !== "live"}
                       />
                     </Box>
-
                     <Box sx={{ display: "flex", gap: 2 }}>
                       <Button
                         variant="contained"
@@ -618,7 +625,6 @@ const AdminAuctionView = () => {
                 sx={{ mt: 1 }}
               />
             </Box>
-
             <TableContainer>
               <Table size="small">
                 <TableHead>
@@ -683,12 +689,12 @@ const AdminAuctionView = () => {
             </TableContainer>
           </Paper>
         </Grid>
+
         <Grid item xs={12} md={5}>
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Team Budgets
             </Typography>
-
             {teamsLoading ? (
               <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
                 <CircularProgress />
@@ -747,6 +753,7 @@ const AdminAuctionView = () => {
         </Grid>
       </Grid>
 
+      {/* Confirm Sale Dialog */}
       <Dialog open={confirmDialogOpen} onClose={handleCloseDialog}>
         <DialogTitle>Confirm Player Sale</DialogTitle>
         <DialogContent>
@@ -773,6 +780,16 @@ const AdminAuctionView = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Upcoming Players Popup Component */}
+      <PlayersByStatusPopup
+        open={showPopup}
+        onClose={() => setShowPopup(false)}
+        upcomingPlayers={upcomingPlayers}
+        unsoldPlayers={unsoldPlayers}
+        soldPlayers={soldPlayersList}
+        loading={loadingPlayers}
+      />
     </Box>
   );
 };

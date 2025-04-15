@@ -85,7 +85,7 @@ const SelectAuctionPage = () => {
                       color="primary"
                       onClick={() =>
                         router.push(
-                          `/dashboard/auction?auctionId=${event.auctionId}`
+                          `/dashboard/auction?auctionId=${event.auctionId}&eventId=${event._id}`
                         )
                       }
                     >

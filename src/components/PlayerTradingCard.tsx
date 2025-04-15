@@ -142,7 +142,20 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
 
   const cardColor = getCardColor();
   const cardGradient = getGradient(cardColor);
+  const statusLabelMap: Record<string, string> = {
+    pending: "Upcoming",
+    unsold: "Unsold",
+    sold: "Sold",
+  };
 
+  const statusColorMap: Record<
+    string,
+    "success" | "error" | "warning" | "info"
+  > = {
+    pending: "info",
+    unsold: "error",
+    sold: "success",
+  };
   return (
     <Paper
       elevation={8}
@@ -351,14 +364,8 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
 
         <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
           <Chip
-            label={status}
-            color={
-              status === "sold"
-                ? "success"
-                : status === "unsold"
-                ? "error"
-                : "primary"
-            }
+            label={statusLabelMap[status] ?? status.toUpperCase()}
+            color={statusColorMap[status] ?? "warning"}
             sx={{
               fontWeight: "bold",
               textTransform: "uppercase",
