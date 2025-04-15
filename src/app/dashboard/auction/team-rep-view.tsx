@@ -10,19 +10,22 @@ import {
   Chip,
   Divider,
   CircularProgress,
-  LinearProgress,
   Table,
   TableBody,
   TableCell,
   TableContainer,
+  LinearProgress,
   TableHead,
   TableRow,
+  Button,
 } from "@mui/material";
 import PlayerTradingCard from "@/components/PlayerTradingCard";
 import { useAuth } from "@/context/auth-context";
 import { auctionService } from "@/services/auction-service";
+import { playersService } from "@/services/players-service";
 import { ApiPlayer } from "@/types/player";
 import { EventSourcePolyfill } from "event-source-polyfill";
+import PlayersByStatusPopup from "./PlayersByStatusPopup";
 
 export interface TeamBudget {
   teamName: string;
@@ -132,12 +135,46 @@ const TeamRepAuctionView = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
+  const [showPopup, setShowPopup] = useState(false);
+  const [allPlayers, setAllPlayers] = useState<ApiPlayer[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+
+  useEffect(() => {
+    const eid = searchParams.get("eventId");
+    console.log("URL eventId:", eid);
+    if (eid) setEventId(eid);
+  }, [searchParams]);
+
+  // 2) Only fetch when both showPopup AND eventId are truthy:
+  useEffect(() => {
+    if (!showPopup || !eventId) return;
+    setLoadingPlayers(true);
+    playersService
+      .getAllPlayers()
+      .then((players) => {
+        const filtered = players.filter((p) => p.eventId === eventId);
+        setAllPlayers(filtered);
+      })
+      .catch((err) => console.error("Failed to load players", err))
+      .finally(() => setLoadingPlayers(false));
+  }, [showPopup, eventId]);
+
+  // Helpers to split into three groups
+  const upcomingPlayers = allPlayers.filter((p) => p.soldStatus === "pending");
+  const unsoldPlayers = allPlayers.filter((p) => p.soldStatus === "unsold");
+  const soldPlayersList = allPlayers.filter((p) => p.soldStatus === "sold");
+  console.log({
+    allPlayers,
+    upcomingPlayers: allPlayers.filter((p) => p.soldStatus === "pending"),
+    unsoldPlayers: allPlayers.filter((p) => p.soldStatus === "unsold"),
+    soldPlayersList: allPlayers.filter((p) => p.soldStatus === "sold"),
+  });
   // Live team status from SSE
   const [liveTeamStatus, setLiveTeamStatus] = useState<TeamBudget | null>(null);
   const [liveSquadPlayers, setLiveSquadPlayers] = useState<
     { firstName: string; lastName: string }[]
   >([]);
-  // ...
+
   // Use the defined type instead of 'any'
   const typedUser = user as AuthUser | null; // Cast to your defined type (and allow null)
 
@@ -320,6 +357,13 @@ const TeamRepAuctionView = () => {
             sx={{ ml: "auto" }}
           />
         )}
+        <Button
+          variant="contained"
+          sx={{ ml: "auto" }}
+          onClick={() => setShowPopup(true)}
+        >
+          Upcoming Players
+        </Button>
       </Paper>
 
       <Grid container spacing={3}>
@@ -558,6 +602,15 @@ const TeamRepAuctionView = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      <PlayersByStatusPopup
+        open={showPopup}
+        onClose={() => setShowPopup(false)}
+        upcomingPlayers={upcomingPlayers}
+        unsoldPlayers={unsoldPlayers}
+        soldPlayers={soldPlayersList}
+        loading={loadingPlayers}
+      />
     </Box>
   );
 };
