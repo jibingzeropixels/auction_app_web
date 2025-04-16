@@ -143,7 +143,7 @@ const PlayerTradingCard: React.FC<PlayerTradingCardProps> = ({ player }) => {
   const cardColor = getCardColor();
   const cardGradient = getGradient(cardColor);
   const statusLabelMap: Record<string, string> = {
-    pending: "Upcoming",
+    pending: "Pending",
     unsold: "Unsold",
     sold: "Sold",
   };

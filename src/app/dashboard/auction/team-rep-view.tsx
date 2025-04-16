@@ -529,76 +529,126 @@ const TeamRepAuctionView = () => {
         </Grid>
 
         <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
+          <Paper
+            sx={{
+              p: 3,
+              mb: 3,
+              fontFamily: "Roboto, sans-serif",
+              border: "1px solid #e0e0e0",
+              borderRadius: 2,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            }}
+          >
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
               Your Team Status
             </Typography>
+
             {liveTeamStatus ? (
-              <Box>
-                <Typography variant="h5" sx={{ color: "primary.main", mt: 2 }}>
-                  {liveTeamStatus.teamName}
-                </Typography>
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Budget
+              <Grid container spacing={2}>
+                {/* Players Bought */}
+                <Grid item xs={6}>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="bold"
+                    color="text.secondary"
+                  >
+                    Players Bought
                   </Typography>
-                  <Box
-                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  <Typography variant="body1">
+                    {liveTeamStatus.playersBought - 1}
+                  </Typography>
+                </Grid>
+
+                {/* Initial Budget */}
+                <Grid item xs={6}>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="bold"
+                    color="text.secondary"
                   >
-                    <Typography variant="body1">Remaining:</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                      ₹{liveTeamStatus.remainingBudget.toLocaleString()}
-                    </Typography>
-                  </Box>
-                  <Box
-                    sx={{ display: "flex", justifyContent: "space-between" }}
+                    Initial Budget
+                  </Typography>
+                  <Typography variant="body1">
+                    ₹{liveTeamStatus.initialBudget.toLocaleString()}
+                  </Typography>
+                </Grid>
+
+                {/* Reserve Amount */}
+                <Grid item xs={6}>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="bold"
+                    color="text.secondary"
                   >
-                    <Typography variant="body1">Players Bought:</Typography>
-                    <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                      {liveTeamStatus.playersBought - 1}
-                    </Typography>
-                  </Box>
+                    Reserve Amount
+                  </Typography>
+                  <Typography variant="body1">
+                    ₹{liveTeamStatus.reserveAmount.toLocaleString()}
+                  </Typography>
+                </Grid>
+
+                {/* Max Auction Amount */}
+                <Grid item xs={6}>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="bold"
+                    color="text.secondary"
+                  >
+                    Max Auction Amount
+                  </Typography>
+                  <Typography variant="body1">
+                    ₹{liveTeamStatus.maxAuctionAmount.toLocaleString()}
+                  </Typography>
+                </Grid>
+
+                {/* Remaining Budget with Label */}
+                <Grid item xs={12}>
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight="bold"
+                    color="text.secondary"
+                  >
+                    Remaining Budget
+                  </Typography>
+                  <Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+                    ₹{liveTeamStatus.remainingBudget.toLocaleString()}
+                  </Typography>
                   <LinearProgress
                     variant="determinate"
                     value={
                       (liveTeamStatus.remainingBudget /
                         (liveTeamStatus.initialBudget ||
                           userTeam.totalBudget ||
-                          1000000)) *
+                          1)) *
                       100
                     }
-                    sx={{ mt: 2, mb: 1, height: 8, borderRadius: 1 }}
+                    sx={{ height: 10, borderRadius: 1 }}
                   />
-                </Box>
-              </Box>
+                </Grid>
+              </Grid>
             ) : (
               <Typography variant="body2" color="text.secondary">
                 Loading team status...
               </Typography>
             )}
+
             <Divider sx={{ my: 3 }} />
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Your Squad (Players: {liveSquadPlayers.length})
+
+            {/* Squad List */}
+            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+              Your Squad (Players: {liveSquadPlayers.length})
+            </Typography>
+            {liveSquadPlayers.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                You haven’t acquired any players yet.
               </Typography>
-              {liveSquadPlayers.length === 0 ? (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ py: 1 }}
-                >
-                  You haven&apos;t acquired any players yet.
+            ) : (
+              liveSquadPlayers.map((player, idx) => (
+                <Typography key={idx} variant="body1" sx={{ mb: 0.5 }}>
+                  {player.firstName} {player.lastName}
                 </Typography>
-              ) : (
-                liveSquadPlayers.map((player, index) => (
-                  <Box key={index} sx={{ mb: 1 }}>
-                    <Typography variant="body1">
-                      {player.firstName} {player.lastName}
-                    </Typography>
-                  </Box>
-                ))
-              )}
-            </Box>
+              ))
+            )}
           </Paper>
         </Grid>
       </Grid>

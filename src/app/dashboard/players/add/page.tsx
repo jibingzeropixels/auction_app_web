@@ -172,7 +172,7 @@ export default function AddPlayerPage() {
     return () => {
       isMounted = false;
     };
-  }, [initialEventId, formData.eventId]);
+  }, []);
 
   useEffect(() => {
     if (formData.eventId && events.length > 0) {
@@ -568,8 +568,8 @@ export default function AddPlayerPage() {
             {/* Skills Rating Inputs */}
             {renderSkills.length > 0 && (
               <Box>
-                <Typography variant="subtitle1" gutterBottom>
-                  Rate Skills (1–5):
+                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                  Skill Ratings
                 </Typography>
                 <Grid container spacing={2}>
                   {renderSkills.map((skill) => {
