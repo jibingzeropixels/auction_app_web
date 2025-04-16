@@ -49,7 +49,11 @@ interface Team {
   players: ApiPlayer[];
   eventId: string;
 }
-
+interface FetchedTeam {
+  _id: string;
+  name: string;
+  eventId: string;
+}
 interface AuctionTeamBudget {
   name: string;
   _id: string;
@@ -134,12 +138,13 @@ const AdminAuctionView = () => {
       setTeamsLoading(true);
       try {
         const fetched = await teamsService.getAllTeams();
-        const formatted: Team[] = fetched.map((t: any) => ({
+        // Map the fetched raw teams data to our Team interface.
+        const formatted: Team[] = (fetched as FetchedTeam[]).map((t) => ({
           _id: t._id,
           name: t.name,
           totalBudget: 0,
           players: [],
-          eventId: t.eventId, // ← pull in the eventId
+          eventId: t.eventId,
         }));
         setTeams(formatted);
       } finally {

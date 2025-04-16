@@ -172,7 +172,7 @@ export default function AddPlayerPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialEventId, formData.eventId]);
 
   useEffect(() => {
     if (formData.eventId && events.length > 0) {
