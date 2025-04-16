@@ -29,11 +29,13 @@ import {
   TableHead,
   TableRow,
   SelectChangeEvent,
+  IconButton,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
 import ReplayIcon from "@mui/icons-material/Replay";
 import PlayerTradingCard from "@/components/PlayerTradingCard";
+import CloseIcon from "@mui/icons-material/Close";
 import { teamsService } from "@/services/teams";
 import { auctionService } from "@/services/auction-service";
 import { playersService } from "@/services/players-service";
@@ -45,8 +47,13 @@ interface Team {
   name: string;
   totalBudget: number;
   players: ApiPlayer[];
+  eventId: string;
 }
-
+interface FetchedTeam {
+  _id: string;
+  name: string;
+  eventId: string;
+}
 interface AuctionTeamBudget {
   name: string;
   _id: string;
@@ -92,6 +99,19 @@ const AdminAuctionView = () => {
   const [allPlayers, setAllPlayers] = useState<ApiPlayer[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(""), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(""), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
   // Read auctionId and eventId from the URL parameters
   useEffect(() => {
     const urlAuctionId = searchParams.get("auctionId");
@@ -117,24 +137,20 @@ const AdminAuctionView = () => {
     const fetchTeams = async () => {
       setTeamsLoading(true);
       try {
-        const fetchedTeams = await teamsService.getAllTeams();
-        const formattedTeams: Team[] = fetchedTeams.map(
-          (team: AuctionTeamBudget) => ({
-            _id: team._id,
-            name: team.name,
-            totalBudget: 0, // will be updated via teamBudgetData
-            players: [],
-          })
-        );
-        setTeams(formattedTeams);
-      } catch (err) {
-        console.error("Error fetching teams:", err);
-        setError("Failed to load teams data");
+        const fetched = await teamsService.getAllTeams();
+        // Map the fetched raw teams data to our Team interface.
+        const formatted: Team[] = (fetched as FetchedTeam[]).map((t) => ({
+          _id: t._id,
+          name: t.name,
+          totalBudget: 0,
+          players: [],
+          eventId: t.eventId,
+        }));
+        setTeams(formatted);
       } finally {
         setTeamsLoading(false);
       }
     };
-
     fetchTeams();
   }, []);
 
@@ -451,17 +467,56 @@ const AdminAuctionView = () => {
       </Paper>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          action={
+            <IconButton
+              aria-label="close"
+              color="inherit"
+              size="small"
+              onClick={() => setError("")}
+            >
+              <CloseIcon fontSize="inherit" />
+            </IconButton>
+          }
+        >
           {error}
         </Alert>
       )}
       {success && (
-        <Alert severity="success" sx={{ mb: 2 }}>
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          action={
+            <IconButton
+              aria-label="close"
+              color="inherit"
+              size="small"
+              onClick={() => setSuccess("")}
+            >
+              <CloseIcon fontSize="inherit" />
+            </IconButton>
+          }
+        >
           {success}
         </Alert>
       )}
       {teamsLoading && (
-        <Alert severity="info" sx={{ mb: 2 }}>
+        <Alert
+          severity="info"
+          sx={{ mb: 2 }}
+          action={
+            <IconButton
+              aria-label="close"
+              color="inherit"
+              size="small"
+              onClick={() => setTeamsLoading(false)}
+            >
+              <CloseIcon fontSize="inherit" />
+            </IconButton>
+          }
+        >
           Loading teams data...
         </Alert>
       )}
@@ -498,28 +553,30 @@ const AdminAuctionView = () => {
                           value={selectedTeamId}
                           label="Winning Team"
                           onChange={handleSelectTeam}
-                          disabled={
-                            auctionStatus !== "live" || teams.length === 0
-                          }
+                          disabled={auctionStatus !== "live" || teamsLoading}
                         >
                           <MenuItem value="">
                             <em>Select a team</em>
                           </MenuItem>
-                          {teams.map((team) => (
-                            <MenuItem
-                              key={team._id}
-                              value={team._id}
-                              disabled={
-                                (teamBudgetData.find(
-                                  (b: AuctionTeamBudget) =>
-                                    b.teamId === team._id
-                                )?.remainingBudget || initialBudget) <
-                                parseInt(bidAmount || "0")
-                              }
-                            >
-                              {team.name}
-                            </MenuItem>
-                          ))}
+                          {teams
+                            .filter((team) => team.eventId === eventId) // ← only teams for this event
+                            .map((team) => {
+                              const remaining =
+                                teamBudgetData.find(
+                                  (b) => b.teamId === team._id
+                                )?.remainingBudget ?? initialBudget;
+                              return (
+                                <MenuItem
+                                  key={team._id}
+                                  value={team._id}
+                                  disabled={
+                                    remaining < parseInt(bidAmount || "0")
+                                  }
+                                >
+                                  {team.name}
+                                </MenuItem>
+                              );
+                            })}
                         </Select>
                       </FormControl>
                     </Box>
